@@ -1,0 +1,226 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Minus, Plus, Trash2, ShieldCheck, Plane, ShoppingCart, Warehouse, Heart } from 'lucide-react'
+import { useCart } from '../context/CartContext'
+import { useOrders } from '../context/OrdersContext'
+import { useWishlist } from '../context/WishlistContext'
+import CountUp from '../components/CountUp'
+import PromoStrip from '../components/PromoStrip'
+import { bannersFor } from '../data/banners'
+
+const cartBanner = bannersFor('cart')[0]
+
+export default function Cart() {
+  const { items, remove, setQty, clear } = useCart()
+  const { add: saveWish } = useWishlist()
+  const { placeBuyRequest } = useOrders()
+  const navigate = useNavigate()
+  const [placing, setPlacing] = useState(false)
+
+  const subtotal = items.reduce((sum, it) => sum + it.priceUSD * it.qty, 0)
+  const serviceFee = subtotal * 0.07
+  const itemPayment = subtotal + serviceFee
+  const shippingEst = items.length ? Math.max(6, items.reduce((s, it) => s + it.qty, 0) * 5.5) : 0
+
+  const saveForLater = (id: string) => {
+    const item = items.find((it) => it.id === id)
+    if (!item) return
+    saveWish({
+      title: item.title,
+      store: item.store,
+      priceUSD: item.priceUSD,
+      emoji: item.emoji,
+      url: item.url,
+      variants: item.variants,
+    })
+    remove(id)
+  }
+
+  const placeOrder = () => {
+    if (!items.length) return
+    setPlacing(true)
+    const order = placeBuyRequest({
+      items: items.map((it) => ({
+        emoji: it.emoji,
+        title: it.title,
+        store: it.store,
+        qty: it.qty,
+      })),
+      itemTotalUSD: itemPayment,
+    })
+    clear()
+    setPlacing(false)
+    navigate(`/orders?placed=${order.id}`)
+  }
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">My cart</h1>
+      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        Pay the item fee now. International shipping is finalized after items arrive at our India
+        warehouse.
+      </p>
+
+      {cartBanner && (
+        <div className="mt-6">
+          <PromoStrip banner={cartBanner} />
+        </div>
+      )}
+
+      <div className="mt-8 grid gap-8 lg:grid-cols-[1.7fr_1fr]">
+        <div className="space-y-4">
+          {items.length === 0 && (
+            <div className="rounded-3xl border border-navy-900/5 bg-white dark:border-white/10 dark:bg-black p-12 text-center shadow-sm">
+              <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-navy-100 text-navy-500">
+                <ShoppingCart className="h-7 w-7" />
+              </span>
+              <p className="mt-4 font-display text-lg font-semibold text-navy-900 dark:text-white">
+                Your cart is empty
+              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Shop on Amazon or another supported store, then use the Chrome extension or paste a
+                product link.
+              </p>
+              <div className="mt-5 flex flex-wrap justify-center gap-3">
+                <a
+                  href="https://www.amazon.in"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-block rounded-full bg-navy-800 px-6 py-3 text-sm font-semibold text-white transition hover:bg-navy-700"
+                >
+                  Shop Amazon.in
+                </a>
+                <Link
+                  to="/ways-to-shop"
+                  className="inline-block rounded-full border border-navy-900/15 px-6 py-3 text-sm font-semibold text-navy-800 transition hover:border-navy-400 dark:text-white"
+                >
+                  Get Chrome extension
+                </Link>
+              </div>
+            </div>
+          )}
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center gap-5 rounded-3xl border border-navy-900/5 bg-white dark:border-white/10 dark:bg-black p-5 shadow-sm"
+            >
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-cream-200 text-4xl dark:bg-white/10">
+                {item.emoji}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-semibold text-navy-900 dark:text-white">{item.title}</div>
+                <div className="mt-0.5 text-xs font-medium uppercase tracking-wide text-slate-400">
+                  {item.store}
+                  {item.variants && Object.keys(item.variants).length > 0 && (
+                    <span className="normal-case tracking-normal">
+                      {' '}
+                      · {Object.values(item.variants).join(' / ')}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2 font-display text-lg font-bold text-navy-900 dark:text-white">
+                  ${item.priceUSD.toFixed(2)}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 rounded-full border border-navy-900/10 px-1.5 py-1">
+                <button
+                  onClick={() => setQty(item.id, item.qty - 1)}
+                  className="rounded-full p-1.5 text-navy-600 hover:bg-cream-100 dark:hover:bg-white/5"
+                  aria-label="Decrease quantity"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <span className="w-5 text-center text-sm font-semibold text-navy-900 dark:text-white">
+                  {item.qty}
+                </span>
+                <button
+                  onClick={() => setQty(item.id, item.qty + 1)}
+                  className="rounded-full p-1.5 text-navy-600 hover:bg-cream-100 dark:hover:bg-white/5"
+                  aria-label="Increase quantity"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <button
+                onClick={() => saveForLater(item.id)}
+                className="rounded-full p-2.5 text-slate-400 transition hover:bg-tangerine-50 hover:text-tangerine-600"
+                aria-label="Save for later"
+                title="Save for later"
+              >
+                <Heart className="h-4.5 w-4.5" />
+              </button>
+              <button
+                onClick={() => remove(item.id)}
+                className="rounded-full p-2.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                aria-label="Remove item"
+              >
+                <Trash2 className="h-4.5 w-4.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <aside className="h-fit rounded-3xl border border-navy-900/5 bg-white dark:border-white/10 dark:bg-black p-7 shadow-sm">
+          <h2 className="font-display text-lg font-semibold">Order summary</h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Two-step proxy checkout — Doorzo-style, India warehouse.
+          </p>
+          <dl className="mt-5 space-y-3 text-sm tabular-nums">
+            <div className="rounded-2xl bg-cream-50 p-4 dark:bg-white/5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-tangerine-600">
+                1 · Pay now
+              </div>
+              <div className="mt-2 flex justify-between">
+                <dt className="text-slate-500 dark:text-slate-400">Subtotal</dt>
+                <dd className="font-semibold text-navy-900 dark:text-white">
+                  ${subtotal.toFixed(2)}
+                </dd>
+              </div>
+              <div className="mt-1.5 flex justify-between">
+                <dt className="text-slate-500 dark:text-slate-400">Proxy service fee</dt>
+                <dd className="font-semibold text-navy-900 dark:text-white">
+                  ${serviceFee.toFixed(2)}
+                </dd>
+              </div>
+              <div className="mt-2 flex justify-between border-t border-navy-900/10 pt-2 text-base">
+                <dt className="font-semibold text-navy-900 dark:text-white">Item payment</dt>
+                <dd className="font-display text-xl font-bold text-navy-900 dark:text-white">
+                  <CountUp value={itemPayment} prefix="$" />
+                </dd>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-dashed border-navy-900/15 p-4">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-navy-500">
+                <Warehouse className="h-3 w-3" /> 2 · After warehouse
+              </div>
+              <div className="mt-2 flex justify-between">
+                <dt className="text-slate-500 dark:text-slate-400">Intl. shipping (est.)</dt>
+                <dd className="font-semibold text-navy-900 dark:text-white">
+                  ${shippingEst.toFixed(2)}
+                </dd>
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+                Final weight and method chosen once goods arrive — free storage for 30 days.
+              </p>
+            </div>
+          </dl>
+          <button
+            disabled={items.length === 0 || placing}
+            onClick={placeOrder}
+            className="mt-6 w-full rounded-full bg-navy-800 py-3.5 text-sm font-semibold text-white shadow-xl shadow-navy-800/25 transition hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {placing ? 'Placing…' : 'Place buy request'}
+          </button>
+          <div className="mt-5 space-y-2 text-xs text-slate-500 dark:text-slate-400">
+            <p className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-leaf-500" /> Buyer protection on every order
+            </p>
+            <p className="flex items-center gap-2">
+              <Plane className="h-4 w-4 text-leaf-500" /> Consolidated shipping to 180+ countries
+            </p>
+          </div>
+        </aside>
+      </div>
+    </main>
+  )
+}

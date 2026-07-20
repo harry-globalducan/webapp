@@ -1,0 +1,465 @@
+import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import {
+  Link2,
+  ShieldCheck,
+  ShoppingCart,
+  Minus,
+  Plus,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  RotateCcw,
+  Heart,
+  ClipboardPaste,
+} from 'lucide-react'
+import {
+  resolveProduct,
+  landedCost,
+  formatMoney,
+  inrTo,
+  FX_RATES,
+  detectStore,
+  type ResolvedProduct,
+} from '../lib/capture'
+import { useCart } from '../context/CartContext'
+import { useWishlist } from '../context/WishlistContext'
+import CountUp from './CountUp'
+import type { Store } from '../data/stores'
+
+type Phase = 'idle' | 'resolving' | 'resolved' | 'added' | 'error'
+
+const DEMO_URL = 'https://www.amazon.in/dp/B09B8V1LZ3'
+
+interface CaptureFlowProps {
+  /** URL to resolve immediately on mount (share target / bookmarklet / clipboard). */
+  initialUrl?: string
+  currency?: string
+  /** Light sits on AddProductPanel; dark for legacy navy embeds. */
+  variant?: 'light' | 'dark'
+}
+
+export default function CaptureFlow({
+  initialUrl = '',
+  currency = 'USD',
+  variant = 'light',
+}: CaptureFlowProps) {
+  const light = variant === 'light'
+  const { add } = useCart()
+  const { toggle: toggleWish, has: hasWish } = useWishlist()
+  const [url, setUrl] = useState(initialUrl)
+  const [phase, setPhase] = useState<Phase>('idle')
+  const [error, setError] = useState('')
+  const [product, setProduct] = useState<ResolvedProduct | null>(null)
+  const [chosen, setChosen] = useState<Record<string, string>>({})
+  const [qty, setQty] = useState(1)
+  const [wishSaved, setWishSaved] = useState(false)
+  const [pasteHint, setPasteHint] = useState('')
+  const [detected, setDetected] = useState<Store | null>(null)
+
+  const resolve = useCallback(async (target: string) => {
+    if (!target.trim()) return
+    setPhase('resolving')
+    setError('')
+    try {
+      const p = await resolveProduct(target.trim())
+      setProduct(p)
+      setChosen(Object.fromEntries(p.variants.map((v) => [v.label, v.options[0]])))
+      setQty(1)
+      setWishSaved(hasWish(p.url) || hasWish(p.title))
+      setDetected(p.store)
+      setPhase('resolved')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.')
+      setPhase('error')
+    }
+    // hasWish is stable enough for post-resolve UI; omit from deps to avoid remount loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (initialUrl) {
+      setUrl(initialUrl)
+      void resolve(initialUrl)
+    }
+  }, [initialUrl, resolve])
+
+  useEffect(() => {
+    const store = detectStore(url)
+    setDetected(store)
+  }, [url])
+
+  const reset = () => {
+    setPhase('idle')
+    setProduct(null)
+    setUrl('')
+    setError('')
+    setDetected(null)
+    setPasteHint('')
+  }
+
+  const pasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      const trimmed = text.trim()
+      if (!trimmed) {
+        setPasteHint('Clipboard is empty — copy a product link first.')
+        return
+      }
+      setUrl(trimmed)
+      setPasteHint('')
+      if (phase !== 'idle') setPhase('idle')
+      void resolve(trimmed)
+    } catch {
+      setPasteHint('Allow clipboard access, or paste with ⌘V / Ctrl+V.')
+    }
+  }
+
+  const addToCart = () => {
+    if (!product) return
+    add({
+      title: product.title,
+      store: product.store.name,
+      priceUSD: inrTo(currency, product.priceINR),
+      qty,
+      emoji: product.emoji,
+      url: product.url,
+      variants: chosen,
+    })
+    setPhase('added')
+  }
+
+  const saveWishlist = () => {
+    if (!product) return
+    const saved = toggleWish({
+      title: product.title,
+      store: product.store.name,
+      priceUSD: inrTo(currency, product.priceINR),
+      emoji: product.emoji,
+      url: product.url,
+      variants: chosen,
+    })
+    setWishSaved(saved)
+  }
+
+  const cost = product ? landedCost(product, qty, currency) : null
+
+  const inputClass = light
+    ? 'w-full rounded-full border border-navy-900/12 bg-white py-3.5 pl-11 pr-28 text-sm text-navy-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-tangerine-400 focus:ring-4 focus:ring-tangerine-500/15 dark:border-white/15 dark:bg-black dark:text-white dark:focus:border-tangerine-400'
+    : 'w-full rounded-full border border-white/10 bg-white/10 py-3.5 pl-11 pr-28 text-sm text-white placeholder-white/40 outline-none backdrop-blur transition focus:border-tangerine-400/60 focus:bg-white/15'
+
+  const iconClass = light ? 'text-slate-400' : 'text-navy-300'
+
+  return (
+    <div className="mx-auto w-full max-w-2xl">
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="relative flex-1">
+          <Link2 className={`absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 ${iconClass}`} />
+          <input
+            value={url}
+            onChange={(e) => {
+              setUrl(e.target.value)
+              setPasteHint('')
+              if (phase !== 'idle') setPhase('idle')
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && resolve(url)}
+            placeholder="https://www.amazon.in/… or any store link"
+            aria-label="Product URL"
+            className={inputClass}
+          />
+          <button
+            type="button"
+            onClick={() => void pasteFromClipboard()}
+            className={`absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+              light
+                ? 'text-navy-600 hover:bg-navy-50 dark:text-white/70 dark:hover:bg-white/10'
+                : 'text-white/70 hover:bg-white/10 hover:text-white'
+            }`}
+            title="Paste from clipboard"
+          >
+            <ClipboardPaste className="h-3.5 w-3.5" />
+            Paste
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => resolve(url)}
+          disabled={phase === 'resolving' || !url.trim()}
+          className="flex items-center justify-center gap-2 rounded-full bg-tangerine-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-tangerine-500/25 transition hover:bg-tangerine-400 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {phase === 'resolving' ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Reading…
+            </>
+          ) : (
+            <>
+              <ShieldCheck className="h-4 w-4" /> Fetch product
+            </>
+          )}
+        </button>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="min-h-[1.25rem]">
+          {detected && phase !== 'resolving' && phase !== 'resolved' && phase !== 'added' && (
+            <span
+              className={`inline-flex animate-pop items-center gap-1.5 text-xs font-medium ${
+                light ? 'text-leaf-700 dark:text-leaf-300' : 'text-leaf-300'
+              }`}
+            >
+              <img
+                src={`https://www.google.com/s2/favicons?domain=${detected.domain}&sz=32`}
+                alt=""
+                className="h-3.5 w-3.5 rounded-sm"
+              />
+              {detected.name} recognized
+            </span>
+          )}
+          {pasteHint && (
+            <span className={`text-xs ${light ? 'text-slate-500' : 'text-white/50'}`}>{pasteHint}</span>
+          )}
+          {phase === 'error' && (
+            <p
+              className={`flex items-center gap-1.5 text-sm font-medium ${
+                light ? 'text-red-600' : 'text-red-300'
+              }`}
+            >
+              <AlertCircle className="h-4 w-4 shrink-0" /> {error}
+            </p>
+          )}
+        </div>
+        {phase === 'idle' && !url.trim() && (
+          <button
+            type="button"
+            onClick={() => {
+              setUrl(DEMO_URL)
+              void resolve(DEMO_URL)
+            }}
+            className={`text-xs font-semibold underline-offset-2 transition hover:underline ${
+              light
+                ? 'text-navy-600 hover:text-tangerine-600 dark:text-tangerine-300'
+                : 'text-tangerine-300 hover:text-tangerine-200'
+            }`}
+          >
+            Try a sample Amazon link
+          </button>
+        )}
+      </div>
+
+      {phase === 'resolving' && (
+        <div
+          className={`mt-5 animate-pulse rounded-3xl p-6 ${
+            light
+              ? 'border border-navy-900/8 bg-zinc-50 dark:border-white/10 dark:bg-white/5'
+              : 'bg-white/5 backdrop-blur'
+          }`}
+        >
+          <div className="flex gap-5">
+            <div
+              className={`h-24 w-24 rounded-2xl ${light ? 'bg-navy-900/10 dark:bg-white/10' : 'bg-white/10'}`}
+            />
+            <div className="flex-1 space-y-3 py-2">
+              <div
+                className={`h-4 w-3/4 rounded ${light ? 'bg-navy-900/10 dark:bg-white/10' : 'bg-white/10'}`}
+              />
+              <div
+                className={`h-3 w-1/3 rounded ${light ? 'bg-navy-900/10 dark:bg-white/10' : 'bg-white/10'}`}
+              />
+              <div
+                className={`h-5 w-1/4 rounded ${light ? 'bg-navy-900/10 dark:bg-white/10' : 'bg-white/10'}`}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(phase === 'resolved' || phase === 'added') && product && cost && (
+        <div className="mt-5 animate-card-in overflow-hidden rounded-3xl border border-navy-900/8 bg-white text-left shadow-xl shadow-navy-900/10 dark:border-white/10 dark:bg-black">
+          <div className="flex flex-col gap-5 p-6 sm:flex-row">
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-zinc-50 text-5xl dark:bg-white/5">
+              {product.emoji}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <img
+                  src={`https://www.google.com/s2/favicons?domain=${product.store.domain}&sz=32`}
+                  alt=""
+                  className="h-4 w-4 rounded"
+                />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  {product.store.name}
+                </span>
+              </div>
+              <h3 className="mt-1 font-display text-lg font-semibold leading-snug text-navy-900 dark:text-white">
+                {product.title}
+              </h3>
+              <div className="mt-1.5 flex items-baseline gap-2">
+                <span className="font-display text-xl font-bold text-navy-900 dark:text-white">
+                  {formatMoney(currency, inrTo(currency, product.priceINR))}
+                </span>
+                <span className="text-xs text-slate-400">
+                  ₹{product.priceINR.toLocaleString('en-IN')} in store
+                </span>
+              </div>
+
+              {product.variants.map((v) => (
+                <div key={v.label} className="mt-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    {v.label}
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {v.options.map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setChosen((c) => ({ ...c, [v.label]: opt }))}
+                        disabled={phase === 'added'}
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                          chosen[v.label] === opt
+                            ? 'bg-navy-800 text-white dark:bg-tangerine-500'
+                            : 'border border-navy-900/15 text-navy-800/70 hover:border-navy-400 dark:border-white/15 dark:text-white/70'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              <div className="mt-4 flex items-center gap-3">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Qty</span>
+                <div className="flex items-center gap-1.5 rounded-full border border-navy-900/15 px-1 py-0.5 dark:border-white/15">
+                  <button
+                    type="button"
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    disabled={phase === 'added'}
+                    className="rounded-full p-1.5 text-navy-600 hover:bg-zinc-100 dark:text-white dark:hover:bg-white/10"
+                    aria-label="Decrease quantity"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="w-5 text-center text-sm font-semibold text-navy-900 dark:text-white">
+                    {qty}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQty((q) => q + 1)}
+                    disabled={phase === 'added'}
+                    className="rounded-full p-1.5 text-navy-600 hover:bg-zinc-100 dark:text-white dark:hover:bg-white/10"
+                    aria-label="Increase quantity"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-dashed border-navy-900/10 bg-zinc-50 px-6 py-4 dark:border-white/10 dark:bg-white/[0.03]">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-navy-900/10 bg-white p-4 dark:border-white/10 dark:bg-black">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-tangerine-600">
+                  1 · Pay now — item fee
+                </div>
+                <dl className="mt-2 space-y-1 text-xs tabular-nums">
+                  <div className="flex justify-between">
+                    <dt className="text-slate-400">Item ×{qty}</dt>
+                    <dd className="font-semibold text-navy-900 dark:text-white">
+                      {formatMoney(currency, cost.item)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-slate-400">Proxy service fee</dt>
+                    <dd className="font-semibold text-navy-900 dark:text-white">
+                      {formatMoney(currency, cost.serviceFee)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between border-t border-navy-900/10 pt-1.5 font-display text-base font-bold text-navy-900 dark:border-white/10 dark:text-white">
+                    <dt>Item payment</dt>
+                    <dd>{formatMoney(currency, cost.itemPayment)}</dd>
+                  </div>
+                </dl>
+              </div>
+              <div className="rounded-2xl border border-dashed border-navy-900/15 bg-white p-4 dark:border-white/15 dark:bg-black">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-navy-500 dark:text-slate-400">
+                  2 · Pay later — after warehouse
+                </div>
+                <dl className="mt-2 space-y-1 text-xs tabular-nums">
+                  <div className="flex justify-between">
+                    <dt className="text-slate-400">Intl. shipping (est.)</dt>
+                    <dd className="font-semibold text-navy-900 dark:text-white">
+                      {formatMoney(currency, cost.shipping)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-slate-400">Est. duties</dt>
+                    <dd className="font-semibold text-navy-900 dark:text-white">
+                      {formatMoney(currency, cost.duties)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between border-t border-navy-900/10 pt-1.5 font-semibold text-navy-900 dark:border-white/10 dark:text-white">
+                    <dt>Ship payment</dt>
+                    <dd>{formatMoney(currency, cost.shipLater)}</dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-navy-900/10 pt-3 dark:border-white/10">
+              <div>
+                <span className="text-xs text-slate-400">Estimated total (both steps)</span>
+                <div className="font-display text-3xl font-bold text-navy-900 dark:text-white">
+                  <CountUp value={cost.total} prefix={FX_RATES[currency]?.symbol ?? '$'} />
+                </div>
+              </div>
+              {phase === 'added' ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-leaf-600 dark:text-leaf-400">
+                    <CheckCircle2 className="h-5 w-5" /> Added to cart
+                  </span>
+                  <Link
+                    to="/cart"
+                    className="rounded-full bg-navy-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-navy-700 dark:bg-tangerine-500 dark:hover:bg-tangerine-400"
+                  >
+                    View cart
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={reset}
+                    className="flex items-center gap-1.5 rounded-full border border-navy-900/15 px-4 py-2.5 text-sm font-medium text-navy-800/70 transition hover:border-navy-400 dark:border-white/15 dark:text-white/70"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" /> Add another
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={addToCart}
+                    className="flex items-center gap-2 rounded-full bg-leaf-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-leaf-500/30 transition hover:bg-leaf-400"
+                  >
+                    <ShoppingCart className="h-4 w-4" /> Add to Ducan cart
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveWishlist}
+                    className={`flex items-center gap-2 rounded-full border px-5 py-3 text-sm font-semibold transition ${
+                      wishSaved
+                        ? 'border-tangerine-400 bg-tangerine-50 text-tangerine-700 dark:bg-tangerine-500/15 dark:text-tangerine-300'
+                        : 'border-navy-900/15 text-navy-800 hover:border-navy-400 dark:border-white/15 dark:text-white'
+                    }`}
+                  >
+                    <Heart
+                      className={`h-4 w-4 ${wishSaved ? 'fill-tangerine-500 text-tangerine-500' : ''}`}
+                    />
+                    {wishSaved ? 'Saved' : 'Wishlist'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

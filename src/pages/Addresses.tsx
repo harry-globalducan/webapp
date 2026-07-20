@@ -1,0 +1,108 @@
+import { useState } from 'react'
+import { Plus, Home, Briefcase, Phone, CheckCircle2 } from 'lucide-react'
+import AccountLayout from '../components/AccountLayout'
+
+interface Address {
+  id: number
+  label: string
+  icon: typeof Home
+  name: string
+  lines: string[]
+  phone: string
+  isDefault: boolean
+}
+
+const initialAddresses: Address[] = [
+  {
+    id: 1,
+    label: 'Home',
+    icon: Home,
+    name: 'Natasha',
+    lines: ['Apartment 1204, Marina Heights', 'Dubai Marina', 'Dubai, United Arab Emirates'],
+    phone: '+971 50 123 4567',
+    isDefault: true,
+  },
+  {
+    id: 2,
+    label: 'Work',
+    icon: Briefcase,
+    name: 'Natasha',
+    lines: ['GeoFleet Ltd, 45 Finsbury Square', 'London EC2A 1HP', 'United Kingdom'],
+    phone: '+44 7700 900123',
+    isDefault: false,
+  },
+]
+
+export default function Addresses() {
+  const [addresses, setAddresses] = useState(initialAddresses)
+
+  const setDefault = (id: number) =>
+    setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })))
+  const remove = (id: number) => setAddresses((prev) => prev.filter((a) => a.id !== id))
+
+  return (
+    <AccountLayout
+      title="Your addresses"
+      description="Delivery addresses for every country you ship to."
+    >
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {/* Add new */}
+        <button className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-navy-900/15 text-slate-400 transition hover:border-navy-400 hover:text-navy-600 dark:border-white/15 dark:hover:border-white/30 dark:hover:text-cream-50">
+          <Plus className="h-8 w-8" />
+          <span className="text-sm font-semibold">Add new address</span>
+        </button>
+
+        {addresses.map((addr) => (
+          <div
+            key={addr.id}
+            className="flex min-h-56 flex-col rounded-2xl border border-navy-900/10 bg-white dark:border-white/10 dark:bg-black shadow-sm"
+          >
+            <div className="flex items-center justify-between border-b border-navy-900/10 px-5 py-3 dark:border-white/10">
+              <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+                <addr.icon className="h-3.5 w-3.5" /> {addr.label}
+              </span>
+              {addr.isDefault && (
+                <span className="flex items-center gap-1 rounded-full bg-leaf-100 px-2.5 py-0.5 text-[10px] font-bold text-leaf-700 dark:bg-leaf-500/20 dark:text-leaf-300">
+                  <CheckCircle2 className="h-3 w-3" /> Default
+                </span>
+              )}
+            </div>
+            <div className="flex-1 px-5 py-4 text-sm">
+              <div className="font-semibold text-navy-900 dark:text-white">{addr.name}</div>
+              {addr.lines.map((line) => (
+                <div key={line} className="mt-0.5 text-slate-500 dark:text-slate-400">
+                  {line}
+                </div>
+              ))}
+              <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-400">
+                <Phone className="h-3 w-3" /> {addr.phone}
+              </div>
+            </div>
+            <div className="flex gap-4 border-t border-navy-900/10 px-5 py-3 text-xs font-semibold dark:border-white/10">
+              <button className="text-navy-600 hover:underline dark:text-navy-200">Edit</button>
+              <button
+                onClick={() => remove(addr.id)}
+                className="text-navy-600 hover:underline dark:text-navy-200"
+              >
+                Remove
+              </button>
+              {!addr.isDefault && (
+                <button
+                  onClick={() => setDefault(addr.id)}
+                  className="ml-auto text-tangerine-600 hover:underline dark:text-tangerine-300"
+                >
+                  Set as default
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-8 rounded-2xl border border-dashed border-navy-900/15 bg-white/60 p-5 text-sm text-slate-500 dark:border-white/15 dark:bg-white/5 dark:text-slate-400">
+        Shipping rates and duty estimates are calculated from your <strong>default</strong> address —
+        keep it set to wherever you want your next order delivered.
+      </p>
+    </AccountLayout>
+  )
+}
