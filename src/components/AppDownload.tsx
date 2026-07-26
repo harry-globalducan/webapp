@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { Smartphone } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Smartphone, ArrowRight } from 'lucide-react'
 import { appStores, qrCodeUrl } from '../data/apps'
 
 function AppleIcon({ className }: { className?: string }) {
@@ -81,6 +82,13 @@ export default function AppDownload() {
               icon={<PlayIcon className="h-6 w-6" />}
             />
           </div>
+          <Link
+            to="/apps"
+            className="group mt-4 inline-flex items-center gap-1 text-sm font-semibold text-navy-600 transition hover:text-tangerine-600 dark:text-navy-200 dark:hover:text-tangerine-300"
+          >
+            Explore app features
+            <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+          </Link>
         </div>
 
         <div className="hidden shrink-0 items-center gap-4 sm:flex">

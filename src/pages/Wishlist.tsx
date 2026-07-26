@@ -3,8 +3,10 @@ import { Heart, ShoppingCart, Trash2, Link2, HeartOff } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
 import { useWishlist } from '../context/WishlistContext'
 import { useCart } from '../context/CartContext'
+import { useCurrency } from '../context/CurrencyContext'
 
 export default function Wishlist() {
+  const { formatPrice } = useCurrency()
   const { items, remove, clear, count } = useWishlist()
   const { add: addToCart } = useCart()
 
@@ -94,7 +96,7 @@ export default function Wishlist() {
                     )}
                   </div>
                   <div className="mt-1.5 font-display text-lg font-bold tabular-nums text-navy-900 dark:text-white">
-                    ${item.priceUSD.toFixed(2)}
+                    {formatPrice(item.priceUSD)}
                   </div>
                   {item.url && (
                     <a

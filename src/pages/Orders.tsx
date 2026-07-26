@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Search, Package, ChevronDown, Warehouse, Plane } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
 import { useOrders } from '../context/OrdersContext'
+import { useCurrency } from '../context/CurrencyContext'
 import {
   orderStatusSteps,
   shippingMethods,
@@ -37,6 +38,7 @@ function StatusProgress({ status }: { status: OrderStatus }) {
 }
 
 export default function Orders() {
+  const { formatPrice } = useCurrency()
   const { orders, selectShipping, payShipping } = useOrders()
   const [params] = useSearchParams()
   const placedId = params.get('placed')
@@ -239,7 +241,7 @@ export default function Orders() {
                             order.shippingMethodId === m.id ? 'text-white/70' : 'text-slate-400'
                           }`}
                         >
-                          {m.eta} · ${m.priceUSD.toFixed(2)}
+                          {m.eta} · {formatPrice(m.priceUSD)}
                         </div>
                       </button>
                     ))}
@@ -250,7 +252,7 @@ export default function Orders() {
                     onClick={() => payShipping(order.id)}
                     className="mt-4 w-full rounded-full bg-leaf-500 py-3 text-sm font-semibold text-white shadow-lg shadow-leaf-500/25 transition hover:bg-leaf-400 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:px-8"
                   >
-                    Pay shipping · ${method.priceUSD.toFixed(2)}
+                    Pay shipping · {formatPrice(method.priceUSD)}
                   </button>
                 </div>
               )}

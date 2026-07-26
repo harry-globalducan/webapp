@@ -53,10 +53,10 @@ export default function UserGuide() {
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-tangerine-300">
               New users&apos; guide
             </p>
-            <h1 className="mt-3 max-w-2xl font-display text-4xl font-bold tracking-tight sm:text-5xl">
+            <h1 className="mt-3 max-w-2xl font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
               From Indian store to your door — in six clear steps
             </h1>
-            <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/65">
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/75">
               Global Ducan is an India proxy shop — inspired by services like{' '}
               <a
                 href="https://www.doorzo.com/en/userGuide/novice-strategy?code=novice-strategy"

@@ -23,7 +23,112 @@
     </script>
   </head>
   <body>
+    <style>
+      #app-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: radial-gradient(125% 125% at 50% 30%, #ffffff 0%, #eef2f9 100%);
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+      }
+      html.dark #app-splash {
+        background: radial-gradient(125% 125% at 50% 30%, #161d2b 0%, #0d0f12 100%);
+      }
+      #app-splash.is-hidden {
+        opacity: 0;
+        visibility: hidden;
+      }
+      #app-splash .aurora {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(72px);
+        opacity: 0.5;
+        pointer-events: none;
+      }
+      #app-splash .aurora-a {
+        width: 320px; height: 320px; top: 20%; left: 28%;
+        background: #ff881b;
+        animation: splash-drift 6.5s ease-in-out infinite;
+      }
+      #app-splash .aurora-b {
+        width: 300px; height: 300px; top: 38%; left: 46%;
+        background: #004aad;
+        animation: splash-drift 8s ease-in-out 1.2s infinite reverse;
+      }
+      html.dark #app-splash .aurora { opacity: 0.32; }
+
+      #app-splash .stack {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        animation: splash-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+      #app-splash .badge { position: relative; height: 96px; width: 96px; display: grid; place-items: center; }
+      #app-splash .ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: conic-gradient(from 90deg, rgba(255,136,27,0) 0%, #ff881b 28%, #7ed957 52%, rgba(126,217,87,0) 78%);
+        -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 3.5px), #000 0);
+                mask: radial-gradient(farthest-side, #0000 calc(100% - 3.5px), #000 0);
+        animation: splash-spin 1s linear infinite;
+      }
+      #app-splash .tile {
+        height: 60px; width: 60px;
+        border-radius: 16px;
+        box-shadow: 0 14px 34px rgba(0, 74, 173, 0.28);
+        animation: splash-breathe 2s ease-in-out infinite;
+      }
+      #app-splash .wordmark { height: 22px; width: auto; opacity: 0.92; }
+      #app-splash .bar {
+        position: relative;
+        height: 3px; width: 150px;
+        border-radius: 9999px;
+        overflow: hidden;
+        background: rgba(0, 74, 173, 0.12);
+      }
+      html.dark #app-splash .bar { background: rgba(255, 255, 255, 0.14); }
+      #app-splash .bar::after {
+        content: '';
+        position: absolute; top: 0; bottom: 0; left: 0;
+        width: 42%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #ff881b, #7ed957);
+        animation: splash-slide 1.15s ease-in-out infinite;
+      }
+
+      @keyframes splash-spin { to { transform: rotate(360deg); } }
+      @keyframes splash-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+      @keyframes splash-drift { 0%, 100% { transform: translate(-28px, 12px); } 50% { transform: translate(28px, -18px); } }
+      @keyframes splash-slide { 0% { transform: translateX(-140%); } 100% { transform: translateX(360%); } }
+      @keyframes splash-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
+      @media (prefers-reduced-motion: reduce) {
+        #app-splash .ring,
+        #app-splash .tile,
+        #app-splash .aurora,
+        #app-splash .stack,
+        #app-splash .bar::after { animation: none; }
+      }
+    </style>
     <div id="root"></div>
+    <div id="app-splash" role="status" aria-label="Loading Global Ducan">
+      <div class="aurora aurora-a"></div>
+      <div class="aurora aurora-b"></div>
+      <div class="stack">
+        <div class="badge">
+          <div class="ring"></div>
+          <img class="tile" src="/icon.svg" alt="" width="60" height="60" />
+        </div>
+        <img class="wordmark" src="/logo-global-ducan.png" alt="Global Ducan" width="220" height="72" />
+        <div class="bar"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

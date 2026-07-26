@@ -7,10 +7,12 @@ import { useWishlist } from '../context/WishlistContext'
 import CountUp from '../components/CountUp'
 import PromoStrip from '../components/PromoStrip'
 import { bannersFor } from '../data/banners'
+import { useCurrency } from '../context/CurrencyContext'
 
 const cartBanner = bannersFor('cart')[0]
 
 export default function Cart() {
+  const { formatPrice } = useCurrency()
   const { items, remove, setQty, clear } = useCart()
   const { add: saveWish } = useWishlist()
   const { placeBuyRequest } = useOrders()
@@ -119,7 +121,7 @@ export default function Cart() {
                   )}
                 </div>
                 <div className="mt-2 font-display text-lg font-bold text-navy-900 dark:text-white">
-                  ${item.priceUSD.toFixed(2)}
+                  {formatPrice(item.priceUSD)}
                 </div>
               </div>
               <div className="flex items-center gap-2 rounded-full border border-navy-900/10 px-1.5 py-1">
@@ -173,13 +175,13 @@ export default function Cart() {
               <div className="mt-2 flex justify-between">
                 <dt className="text-slate-500 dark:text-slate-400">Subtotal</dt>
                 <dd className="font-semibold text-navy-900 dark:text-white">
-                  ${subtotal.toFixed(2)}
+                  {formatPrice(subtotal)}
                 </dd>
               </div>
               <div className="mt-1.5 flex justify-between">
                 <dt className="text-slate-500 dark:text-slate-400">Proxy service fee</dt>
                 <dd className="font-semibold text-navy-900 dark:text-white">
-                  ${serviceFee.toFixed(2)}
+                  {formatPrice(serviceFee)}
                 </dd>
               </div>
               <div className="mt-2 flex justify-between border-t border-navy-900/10 pt-2 text-base">
@@ -196,7 +198,7 @@ export default function Cart() {
               <div className="mt-2 flex justify-between">
                 <dt className="text-slate-500 dark:text-slate-400">Intl. shipping (est.)</dt>
                 <dd className="font-semibold text-navy-900 dark:text-white">
-                  ${shippingEst.toFixed(2)}
+                  {formatPrice(shippingEst)}
                 </dd>
               </div>
               <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
@@ -216,7 +218,7 @@ export default function Cart() {
               <ShieldCheck className="h-4 w-4 text-leaf-500" /> Buyer protection on every order
             </p>
             <p className="flex items-center gap-2">
-              <Plane className="h-4 w-4 text-leaf-500" /> Consolidated shipping to 180+ countries
+              <Plane className="h-4 w-4 text-leaf-500" /> Consolidated shipping to 20+ countries
             </p>
           </div>
         </aside>

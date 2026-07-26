@@ -14,9 +14,11 @@ import {
   Heart,
   Star,
   Quote,
+  Puzzle,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { stores, categories } from '../data/stores'
+import { categories } from '../data/stores'
+import { useHomeData } from '../context/HomeDataContext'
 import { bannersFor } from '../data/banners'
 import StoreCard, { FeaturedStoreCard } from '../components/StoreCard'
 import AddProductPanel from '../components/AddProductPanel'
@@ -25,8 +27,7 @@ import SectionHeading from '../components/SectionHeading'
 import PromoCarousel from '../components/PromoCarousel'
 import PromoStrip from '../components/PromoStrip'
 import AppDownload from '../components/AppDownload'
-import ProxySearch from '../components/ProxySearch'
-import Globe3D from '../components/Globe3D'
+import HeroBento from '../components/HeroBento'
 
 const homeBanners = bannersFor('home')
 const storesBanner = bannersFor('home-stores')[0]
@@ -73,36 +74,41 @@ const steps = [
 ]
 
 const recentlyShipped = [
-  '🎧 boAt Airdopes → Toronto',
+  '🎧 boAt Airdopes → Malé',
   '🥻 Banarasi Saree → Dubai',
-  '🧴 Derma Co SPF50 → London',
-  '⌚ Noise Smartwatch → Singapore',
-  '👗 Anarkali Set → New Jersey',
-  '💄 Nykaa Beauty Box → Sydney',
-  '🧥 Denim Jacket → Berlin',
-  '👶 FirstCry Rompers → Auckland',
+  '🧴 Derma Co SPF50 → Victoria',
+  '⌚ Noise Smartwatch → Thimphu',
+  '👗 Anarkali Set → Port Louis',
+  '💄 Nykaa Beauty Box → Riyadh',
+  '🧥 Denim Jacket → Kathmandu',
+  '👶 FirstCry Rompers → Colombo',
 ]
 
 const testimonials = [
   {
-    quote: 'Ordered a silk saree from Varanasi to Dubai. Landed exactly at the price they quoted — no customs surprise.',
-    name: 'Priya M.',
-    where: 'Dubai, UAE',
+    quote: 'Ordered Nykaa skincare and a Banarasi saree from Mumbai — landed in Port Louis at the exact price quoted, no customs surprise.',
+    name: 'Devi R.',
+    where: 'Port Louis, Mauritius',
   },
   {
-    quote: "The share-to-app flow is magic. I shop Myntra on my phone like I'm still in Mumbai.",
-    name: 'Ankit S.',
-    where: 'Toronto, Canada',
+    quote: "Shopping Amazon.in from Malé feels local now. One box, one tracking number all the way to the islands.",
+    name: 'Aishath R.',
+    where: 'Malé, Maldives',
   },
   {
-    quote: 'Three stores, one box, one tracking number. Half the shipping cost of doing it myself.',
-    name: 'Sarah K.',
-    where: 'London, UK',
+    quote: 'Three stores consolidated into a single parcel to Victoria — half of what I would have paid shipping each one myself.',
+    name: 'Anjali P.',
+    where: 'Victoria, Seychelles',
+  },
+  {
+    quote: 'Fast delivery to Thimphu and duties shown upfront in my currency. Finally a reliable way to shop India.',
+    name: 'Tashi D.',
+    where: 'Thimphu, Bhutan',
   },
 ]
 
 const stats = [
-  { value: '180+', label: 'Countries served' },
+  { value: '20+', label: 'Countries served' },
   { value: '25k+', label: 'Global shoppers' },
   { value: '120k+', label: 'Parcels delivered' },
   { value: '4.8★', label: 'Average rating' },
@@ -126,6 +132,7 @@ function ShippedTicker() {
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>('All')
+  const { stores } = useHomeData()
 
   const featured = stores.filter((s) => s.preferred)
   const visibleStores = (
@@ -148,10 +155,10 @@ export default function Home() {
                   Global shopping
                 </span>
               </div>
-              <h1 className="mt-6 text-5xl font-bold leading-[0.98] tracking-tighter sm:text-7xl xl:text-[5.25rem]">
-                Shop India.
+              <h1 className="mt-6 text-5xl font-bold leading-[1.03] tracking-tight sm:text-7xl">
+                Shop India,
                 <br />
-                Shipped <span className="italic text-tangerine-500">home.</span>
+                shipped <span className="text-tangerine-500">home.</span>
               </h1>
               <p className="mt-6 max-w-md text-lg leading-relaxed text-slate-600 dark:text-slate-400">
                 Browse Amazon, Myntra, Nykaa and more on their real sites — then Buy with Ducan via
@@ -159,16 +166,23 @@ export default function Home() {
               </p>
             </Reveal>
             <Reveal delay={150}>
-              <div className="mt-8 max-w-lg">
-                <ProxySearch variant="hero" />
-                <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                  Paste a product link to add it here — or{' '}
-                  <Link to="/ways-to-shop" className="font-semibold text-navy-600 hover:underline dark:text-navy-200">
-                    install the Chrome extension
-                  </Link>{' '}
-                  and shop on the store itself.
-                </p>
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link
+                  to="/ways-to-shop"
+                  className="inline-flex items-center gap-2 rounded-full bg-navy-800 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-navy-800/20 transition hover:-translate-y-0.5 hover:bg-navy-700 dark:bg-tangerine-500 dark:shadow-tangerine-500/20 dark:hover:bg-tangerine-400"
+                >
+                  <Puzzle className="h-4 w-4" /> Get the Chrome extension
+                </Link>
+                <a
+                  href="#stores"
+                  className="inline-flex items-center gap-2 rounded-full border border-navy-900/12 bg-white px-6 py-3.5 text-sm font-semibold text-navy-800 transition hover:-translate-y-0.5 hover:border-navy-300 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:border-white/30"
+                >
+                  Browse stores
+                </a>
               </div>
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                Or paste any product link into the search bar above to add it to your cart.
+              </p>
               <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-sm text-slate-500 dark:text-slate-400">
                 <span className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-leaf-500" /> Buyer protection
@@ -185,7 +199,7 @@ export default function Home() {
 
           <Reveal delay={200}>
             <div className="mx-auto w-full max-w-md lg:mx-0 lg:max-w-none">
-              <Globe3D />
+              <HeroBento />
             </div>
           </Reveal>
         </div>
@@ -230,18 +244,26 @@ export default function Home() {
             <Reveal>
               <SectionHeading eyebrow="How it works" title="Shop India," accent="we handle the rest" />
             </Reveal>
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="relative mt-14 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+              {/* animated connector line behind the icons (desktop) */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-x-[16%] top-9 hidden h-px bg-[repeating-linear-gradient(to_right,var(--color-navy-300)_0_6px,transparent_6px_14px)] opacity-40 lg:block dark:bg-[repeating-linear-gradient(to_right,var(--color-white)_0_6px,transparent_6px_14px)] dark:opacity-15"
+              />
               {steps.map((step, i) => (
-                <Reveal key={step.title} delay={i * 80}>
-                  <div className="relative h-full overflow-hidden rounded-3xl border border-navy-900/5 bg-cream-50 p-7 transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-navy-900/10 dark:border-white/5 dark:bg-white/5">
-                    <span className="absolute -right-3 -top-6 font-display text-[90px] font-bold text-navy-900/5 dark:text-white/5">
-                      {i + 1}
-                    </span>
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-navy-800 text-white dark:bg-tangerine-500">
-                      <step.icon className="h-5 w-5" />
+                <Reveal key={step.title} delay={i * 90}>
+                  <div className="group relative flex flex-col items-center px-2 text-center">
+                    <span className="relative flex h-[72px] w-[72px] items-center justify-center rounded-3xl bg-navy-800 text-white shadow-lg shadow-navy-900/20 transition duration-300 group-hover:-translate-y-1.5 group-hover:shadow-xl dark:bg-tangerine-500 dark:shadow-tangerine-500/25">
+                      {/* pulsing halo */}
+                      <span className="absolute inset-0 rounded-3xl bg-navy-800 animate-pulse-ring dark:bg-tangerine-500" />
+                      <step.icon className="relative h-7 w-7" />
+                      {/* step number */}
+                      <span className="absolute -right-1.5 -top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-bold text-navy-800 shadow ring-1 ring-navy-900/5 dark:text-tangerine-600">
+                        {i + 1}
+                      </span>
                     </span>
                     <h3 className="mt-5 text-lg font-semibold">{step.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                    <p className="mt-2 max-w-xs text-sm leading-relaxed text-slate-500 dark:text-slate-400">
                       {step.text}
                     </p>
                   </div>
@@ -330,7 +352,7 @@ export default function Home() {
             </div>
           </Reveal>
 
-          <div className="mt-14 grid gap-4 md:grid-cols-3">
+          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {testimonials.map((t, i) => (
               <Reveal key={t.name} delay={i * 120}>
                 <figure className="h-full rounded-3xl border border-navy-900/5 bg-cream-50 p-7 dark:border-white/5 dark:bg-white/5">

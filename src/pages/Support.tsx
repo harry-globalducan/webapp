@@ -12,25 +12,37 @@ import {
 } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
 
+// Official contact details — mirrored from the mobile app (lib/utils/constants.dart).
+const SUPPORT_EMAIL = 'support@globalducan.com'
+const SUPPORT_PHONE_DISPLAY = '+91 92117 06119'
+const WHATSAPP_NUMBER = '919211706119'
+
+const WHATSAPP_HREF = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  'Hi Global Ducan, I need help with an order.',
+)}`
+
 const channels = [
   {
     icon: MessageCircle,
-    title: 'Live chat',
-    sub: 'Fastest — typical reply under 2 minutes',
+    title: 'Chat with us',
+    sub: 'Fastest — we reply on WhatsApp within minutes',
     action: 'Start chat',
     highlight: true,
+    href: WHATSAPP_HREF,
   },
   {
     icon: Mail,
     title: 'Email us',
-    sub: 'care@globalducan.com · replies within 12h',
+    sub: `${SUPPORT_EMAIL} · replies within 12h`,
     action: 'Write to us',
+    href: `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Global Ducan support request')}`,
   },
   {
     icon: Phone,
-    title: 'WhatsApp',
-    sub: 'Message us about an order any time',
-    action: 'Open WhatsApp',
+    title: 'Call us',
+    sub: `${SUPPORT_PHONE_DISPLAY} · Mon–Sat, 10am–7pm IST`,
+    action: 'Call now',
+    href: `tel:+${WHATSAPP_NUMBER}`,
   },
 ]
 
@@ -102,15 +114,32 @@ export default function Support() {
             >
               {ch.sub}
             </p>
-            <button
-              className={`mt-4 rounded-full px-5 py-2.5 text-sm font-semibold transition ${
-                ch.highlight
-                  ? 'bg-tangerine-500 text-white shadow-lg shadow-tangerine-500/30 hover:bg-tangerine-400'
-                  : 'border border-navy-900/15 text-navy-800/80 hover:border-navy-400 dark:border-white/15 dark:text-white dark:hover:border-white/30'
-              }`}
-            >
-              {ch.action}
-            </button>
+            {ch.href ? (
+              <a
+                href={ch.href}
+                {...(ch.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer noopener' } : {})}
+                className={`mt-4 inline-block rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                  ch.highlight
+                    ? 'bg-tangerine-500 text-white shadow-lg shadow-tangerine-500/30 hover:bg-tangerine-400'
+                    : 'border border-navy-900/15 text-navy-800/80 hover:border-navy-400 dark:border-white/15 dark:text-white dark:hover:border-white/30'
+                }`}
+              >
+                {ch.action}
+              </a>
+            ) : (
+              <button
+                type="button"
+                disabled
+                title="Coming soon"
+                className={`mt-4 cursor-not-allowed rounded-full px-5 py-2.5 text-sm font-semibold opacity-60 ${
+                  ch.highlight
+                    ? 'bg-tangerine-500 text-white'
+                    : 'border border-navy-900/15 text-navy-800/80 dark:border-white/15 dark:text-white'
+                }`}
+              >
+                {ch.action}
+              </button>
+            )}
           </div>
         ))}
       </div>
