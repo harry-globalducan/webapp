@@ -1,14 +1,27 @@
 /**
  * Thin REST client for the Global Ducan backend.
  *
- * In dev the browser calls same-origin `/api/*` and Vite proxies it to
- * VITE_API_BASE (see vite.config.ts). In production, point `/api` at your
- * gateway (or set VITE_API_BASE and adjust API_ROOT below).
+ * Base URL resolution:
  *
- * Endpoint paths mirror the mobile app's auth flow. If the app uses different
- * paths/payloads, adjust the constants and request bodies below to match.
+ * - **Development** — always calls same-origin `/api/v1/*`; the Vite dev server
+ *   proxies that to `VITE_API_BASE` (see vite.config.ts). This avoids CORS and
+ *   mixed-content issues against a plain-HTTP LAN backend.
+ *
+ * - **Production** (Vercel et al.) — there is no dev proxy, so:
+ *     • If `VITE_API_BASE` is set at build time, requests go directly to that
+ *       absolute origin, e.g. `https://api.globalducan.com/api/v1/auth/signin`.
+ *     • If it is NOT set, requests stay relative (`/api/v1/...`) so they can be
+ *       forwarded by a same-origin rewrite — see `vercel.json`.
+ *
+ * ⚠️ A browser on an HTTPS page cannot call an `http://` API (mixed content).
+ *    For production either expose the backend over HTTPS, or leave
+ *    `VITE_API_BASE` unset and proxy through the `vercel.json` rewrite.
  */
-const API_ROOT = '/api/v1'
+const API_HOST = import.meta.env.DEV
+  ? '' // same-origin → handled by the Vite dev proxy
+  : (import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '')
+
+export const API_ROOT = `${API_HOST}/api/v1`
 
 /** Matches com.technosfirst.ducan.resources.rest.* controllers in app-service. */
 export const AUTH_ENDPOINTS = {
