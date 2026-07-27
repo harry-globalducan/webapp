@@ -3,6 +3,9 @@ import * as api from '../lib/api'
 import type { AuthUser, RegisterInput, LoginInput } from '../lib/api'
 
 interface AuthContextValue {
+  /** True when a 401/403 forced a sign-out, so the UI can explain it. */
+  sessionExpired: boolean
+  clearSessionExpired: () => void
   user: AuthUser | null
   token: string | null
   isAuthed: boolean
@@ -30,6 +33,20 @@ function load(): StoredAuth | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<StoredAuth | null>(load)
+  const [sessionExpired, setSessionExpired] = useState(false)
+
+  // A 401/403 from any call means the stored token is dead — clear it so the
+  // UI drops back to the signed-out state instead of showing broken pages,
+  // and flag it so we can explain the sign-out rather than doing it silently.
+  useEffect(() => {
+    api.setAuthFailureHandler(() => {
+      setAuth((prev) => {
+        if (prev) setSessionExpired(true)
+        return null
+      })
+    })
+    return () => api.setAuthFailureHandler(null)
+  }, [])
 
   // Keep the API client's bearer token in sync with stored auth.
   useEffect(() => {
@@ -78,7 +95,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user
   }
 
-  const logout = () => setAuth(null)
+  const logout = () => {
+    setAuth(null)
+    setSessionExpired(false)
+  }
 
   return (
     <AuthContext.Provider
@@ -89,6 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         login,
         logout,
+        sessionExpired,
+        clearSessionExpired: () => setSessionExpired(false),
       }}
     >
       {children}

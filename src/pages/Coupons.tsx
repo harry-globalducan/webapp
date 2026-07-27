@@ -5,6 +5,7 @@ import PromoStrip from '../components/PromoStrip'
 import { bannersFor } from '../data/banners'
 import { useAuth } from '../context/AuthContext'
 import { useApiData } from '../lib/useApiData'
+import ApiErrorNotice from '../components/ApiErrorNotice'
 import { useCurrency } from '../context/CurrencyContext'
 import * as api from '../lib/api'
 import { ApiError } from '../lib/api'
@@ -104,7 +105,7 @@ export default function Coupons() {
   const { isAuthed } = useAuth()
   const { formatPrice } = useCurrency()
 
-  const { data: apiCoupons, live, refresh } = useApiData(() => api.getCoupons(), {
+  const { data: apiCoupons, live, error, refresh } = useApiData(() => api.getCoupons(), {
     enabled: isAuthed,
     fallback: [] as api.ApiCoupon[],
   })
@@ -158,6 +159,12 @@ export default function Coupons() {
           <PromoStrip banner={couponsBanner} />
         </div>
       )}
+      <ApiErrorNotice
+        message={error}
+        onRetry={refresh}
+        hint="Showing sample coupons until we can reach your account."
+      />
+
       {/* Redeem a code — POST /api/v1/discount-coupons/assign */}
       {isAuthed && (
         <form onSubmit={addCoupon} className="mb-6">

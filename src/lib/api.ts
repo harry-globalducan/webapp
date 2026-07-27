@@ -57,11 +57,61 @@ export interface AuthResponse {
 
 export class ApiError extends Error {
   status: number
-  constructor(message: string, status: number) {
+  /** Raw server text, kept for logging — never rendered to users. */
+  detail?: string
+  constructor(message: string, status: number, detail?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.detail = detail
   }
+  /** 401/403 — the session is missing, expired or lacks permission. */
+  get isAuth() {
+    return this.status === 401 || this.status === 403
+  }
+  /** No response at all (offline, DNS, CORS, mixed content). */
+  get isNetwork() {
+    return this.status === 0
+  }
+}
+
+/** Friendly copy per status. The server may answer with an HTML error page,
+ *  so we never surface raw response bodies. */
+function messageForStatus(status: number, serverMessage?: string): string {
+  switch (status) {
+    case 400:
+      return serverMessage || 'Some details were invalid. Please check and try again.'
+    case 401:
+      return 'Your session has expired. Please sign in again.'
+    case 403:
+      return 'You do not have permission to do that. Please sign in again.'
+    case 404:
+      return 'We could not find what you were looking for.'
+    case 408:
+      return 'The request timed out. Please try again.'
+    case 409:
+      return serverMessage || 'An account with this email already exists.'
+    case 422:
+      return serverMessage || 'Some details were invalid. Please check and try again.'
+    case 429:
+      return 'Too many attempts. Please wait a moment and try again.'
+    case 500:
+      return 'Something went wrong on our side. Please try again shortly.'
+    case 502:
+    case 503:
+    case 504:
+      return 'The service is temporarily unavailable. Please try again shortly.'
+    default:
+      if (status >= 500) return 'Something went wrong on our side. Please try again shortly.'
+      return serverMessage || 'Something went wrong. Please try again.'
+  }
+}
+
+/** Called on 401/403 so the app can clear a dead session. */
+type AuthFailureHandler = () => void
+let onAuthFailure: AuthFailureHandler | null = null
+export function setAuthFailureHandler(fn: AuthFailureHandler | null) {
+  onAuthFailure = fn
 }
 
 let authToken: string | null = null
@@ -78,23 +128,44 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         'Content-Type': 'application/json',
         // Backend/mobile clients send a platform hint on every call.
         'X-Platform': 'web',
+        Accept: 'application/json',
         ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         ...options.headers,
       },
     })
   } catch {
-    throw new ApiError('Network error — could not reach the server.', 0)
+    throw new ApiError(
+      'Could not reach the server. Check your connection and try again.',
+      0,
+    )
   }
 
-  const text = await res.text()
-  const data = text ? safeJson(text) : null
+  const raw = await res.text()
+  const contentType = res.headers.get('content-type') ?? ''
+  const looksJson = contentType.includes('json') || /^\s*[[{]/.test(raw)
+  // Tomcat and proxies answer with HTML error pages; parse only real JSON.
+  const data = looksJson ? safeJson(raw) : null
 
   if (!res.ok) {
-    const message =
-      (data && (data.message || data.error || data.detail)) ||
-      (res.status === 409 ? 'An account with this email already exists.' : 'Something went wrong. Please try again.')
-    throw new ApiError(message, res.status)
+    const serverMessage =
+      data && typeof data === 'object'
+        ? (data.message ?? data.error ?? data.detail ?? undefined)
+        : undefined
+
+    if (res.status === 401 || res.status === 403) onAuthFailure?.()
+
+    throw new ApiError(
+      messageForStatus(res.status, typeof serverMessage === 'string' ? serverMessage : undefined),
+      res.status,
+      raw.slice(0, 500),
+    )
   }
+
+  // A 2xx that isn't JSON (e.g. an HTML login page from a proxy) is not usable.
+  if (raw && !looksJson) {
+    throw new ApiError('Unexpected response from the server. Please try again.', res.status, raw.slice(0, 500))
+  }
+
   return data as T
 }
 
@@ -102,7 +173,7 @@ function safeJson(text: string): any {
   try {
     return JSON.parse(text)
   } catch {
-    return { message: text }
+    return null
   }
 }
 

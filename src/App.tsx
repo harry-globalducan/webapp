@@ -6,6 +6,7 @@ import ClipboardAssist from './components/ClipboardAssist'
 import MobileTabBar from './components/MobileTabBar'
 import RouteProgress from './components/RouteProgress'
 import RequireAuth from './components/RequireAuth'
+import SessionExpiredBanner from './components/SessionExpiredBanner'
 import NoticeBar from './components/NoticeBar'
 import StoreRail from './components/StoreRail'
 import { CartProvider } from './context/CartContext'
@@ -96,6 +97,7 @@ export default function App() {
                   <div className="h-16 md:hidden" />
                   <MobileTabBar />
                   <ClipboardAssist />
+                  <SessionExpiredBanner />
                 </ShopGateProvider>
               </BrowserRouter>
             </OrdersProvider>

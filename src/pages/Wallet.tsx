@@ -19,6 +19,7 @@ import DepositFlowGraphic from '../components/DepositFlowGraphic'
 import { useAuth } from '../context/AuthContext'
 import { useCurrency } from '../context/CurrencyContext'
 import { useApiData } from '../lib/useApiData'
+import ApiErrorNotice from '../components/ApiErrorNotice'
 import * as api from '../lib/api'
 
 const DEPOSIT_SECTION_ID = 'how-bank-deposits'
@@ -82,7 +83,7 @@ export default function Wallet() {
   const { format } = useCurrency()
 
   // GET /api/v1/wallet — real balance for signed-in users.
-  const { data: wallet } = useApiData(() => api.getWallet(), {
+  const { data: wallet, error: walletError, refresh: refreshWallet } = useApiData(() => api.getWallet(), {
     enabled: isAuthed,
     fallback: { balance: 0, currency: 'USD' } as api.WalletBalance,
   })
@@ -118,6 +119,12 @@ export default function Wallet() {
         </button>
       }
     >
+      <ApiErrorNotice
+        message={walletError}
+        onRetry={refreshWallet}
+        hint="Your balance could not be loaded."
+      />
+
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-6">
           {/* Balance hero — open, light */}
