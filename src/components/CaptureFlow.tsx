@@ -14,20 +14,12 @@ import {
   ClipboardPaste,
   LogIn,
 } from 'lucide-react'
-import {
-  resolveProduct,
-  landedCost,
-  formatMoney,
-  inrTo,
-  FX_RATES,
-  detectStore,
-  type ResolvedProduct,
-} from '../lib/capture'
+import { resolveProduct, landedCost, detectStore, type ResolvedProduct } from '../lib/capture'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useHomeData } from '../context/HomeDataContext'
+import { useCurrency } from '../context/CurrencyContext'
 import { useWishlist } from '../context/WishlistContext'
-import CountUp from './CountUp'
 import type { Store } from '../data/stores'
 
 type Phase = 'idle' | 'resolving' | 'resolved' | 'added' | 'error' | 'auth'
@@ -36,16 +28,11 @@ type Phase = 'idle' | 'resolving' | 'resolved' | 'added' | 'error' | 'auth'
 interface CaptureFlowProps {
   /** URL to resolve immediately on mount (share target / bookmarklet / clipboard). */
   initialUrl?: string
-  currency?: string
   /** Light sits on AddProductPanel; dark for legacy navy embeds. */
   variant?: 'light' | 'dark'
 }
 
-export default function CaptureFlow({
-  initialUrl = '',
-  currency = 'USD',
-  variant = 'light',
-}: CaptureFlowProps) {
+export default function CaptureFlow({ initialUrl = '', variant = 'light' }: CaptureFlowProps) {
   const light = variant === 'light'
   const { add } = useCart()
   const { toggle: toggleWish, has: hasWish } = useWishlist()
@@ -61,6 +48,7 @@ export default function CaptureFlow({
   const [pendingUrl, setPendingUrl] = useState('')
   const { isAuthed } = useAuth()
   const { stores: liveStores } = useHomeData()
+  const { formatPrice } = useCurrency()
 
   // Read these through refs so `resolve` keeps a stable identity — otherwise the
   // auto-resolve effect below re-runs whenever the store list loads, re-fetching
@@ -146,7 +134,7 @@ export default function CaptureFlow({
     add({
       title: product.title,
       store: product.store.name,
-      priceUSD: inrTo(currency, product.priceINR),
+      priceUSD: product.priceUSD,
       qty,
       emoji: product.emoji,
       url: product.url,
@@ -160,7 +148,7 @@ export default function CaptureFlow({
     const saved = toggleWish({
       title: product.title,
       store: product.store.name,
-      priceUSD: inrTo(currency, product.priceINR),
+      priceUSD: product.priceUSD,
       emoji: product.emoji,
       url: product.url,
       variants: chosen,
@@ -168,7 +156,7 @@ export default function CaptureFlow({
     setWishSaved(saved)
   }
 
-  const cost = product ? landedCost(product, qty, currency) : null
+  const cost = product ? landedCost(product, qty) : null
 
   const inputClass = light
     ? 'w-full rounded-full border border-navy-900/12 bg-white py-3.5 pl-11 pr-28 text-sm text-navy-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-tangerine-400 focus:ring-4 focus:ring-tangerine-500/15 dark:border-white/15 dark:bg-black dark:text-white dark:focus:border-tangerine-400'
@@ -357,7 +345,7 @@ export default function CaptureFlow({
               </h3>
               <div className="mt-1.5 flex items-baseline gap-2">
                 <span className="font-display text-xl font-bold text-navy-900 dark:text-white">
-                  {formatMoney(currency, inrTo(currency, product.priceINR))}
+                  {formatPrice(product.priceUSD)}
                 </span>
                 <span className="text-xs text-slate-400">
                   ₹{product.priceINR.toLocaleString('en-IN')} in store
@@ -428,18 +416,18 @@ export default function CaptureFlow({
                   <div className="flex justify-between">
                     <dt className="text-slate-400">Item ×{qty}</dt>
                     <dd className="font-semibold text-navy-900 dark:text-white">
-                      {formatMoney(currency, cost.item)}
+                      {formatPrice(cost.item)}
                     </dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-slate-400">Proxy service fee</dt>
                     <dd className="font-semibold text-navy-900 dark:text-white">
-                      {formatMoney(currency, cost.serviceFee)}
+                      {formatPrice(cost.serviceFee)}
                     </dd>
                   </div>
                   <div className="flex justify-between border-t border-navy-900/10 pt-1.5 font-display text-base font-bold text-navy-900 dark:border-white/10 dark:text-white">
                     <dt>Item payment</dt>
-                    <dd>{formatMoney(currency, cost.itemPayment)}</dd>
+                    <dd>{formatPrice(cost.itemPayment)}</dd>
                   </div>
                 </dl>
               </div>
@@ -451,18 +439,18 @@ export default function CaptureFlow({
                   <div className="flex justify-between">
                     <dt className="text-slate-400">Intl. shipping (est.)</dt>
                     <dd className="font-semibold text-navy-900 dark:text-white">
-                      {formatMoney(currency, cost.shipping)}
+                      {formatPrice(cost.shipping)}
                     </dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-slate-400">Est. duties</dt>
                     <dd className="font-semibold text-navy-900 dark:text-white">
-                      {formatMoney(currency, cost.duties)}
+                      {formatPrice(cost.duties)}
                     </dd>
                   </div>
                   <div className="flex justify-between border-t border-navy-900/10 pt-1.5 font-semibold text-navy-900 dark:border-white/10 dark:text-white">
                     <dt>Ship payment</dt>
-                    <dd>{formatMoney(currency, cost.shipLater)}</dd>
+                    <dd>{formatPrice(cost.shipLater)}</dd>
                   </div>
                 </dl>
               </div>
@@ -471,7 +459,7 @@ export default function CaptureFlow({
               <div>
                 <span className="text-xs text-slate-400">Estimated total (both steps)</span>
                 <div className="font-display text-3xl font-bold text-navy-900 dark:text-white">
-                  <CountUp value={cost.total} prefix={FX_RATES[currency]?.symbol ?? '$'} />
+                  <span>{formatPrice(cost.total)}</span>
                 </div>
               </div>
               {phase === 'added' ? (

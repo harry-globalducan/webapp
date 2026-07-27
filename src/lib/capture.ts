@@ -12,7 +12,13 @@ export interface ResolvedProduct {
   /** Server cart-item id, present once the product has been added. */
   cartItemId?: string
   title: string
+  /** Store price in its base currency (INR) — shown as "x in store". */
   priceINR: number
+  /**
+   * Price in USD as calculated by the server. The backend already applies the
+   * live FX rate, so we never re-convert from INR ourselves.
+   */
+  priceUSD: number
   /** Real product image from the scraper, when available. */
   imageUrl?: string
   emoji: string
@@ -84,6 +90,29 @@ export function extractUrl(text: string): string | null {
 }
 
 
+/** Map a priced cart item into the shape the capture UI renders. */
+function toResolved(item: api.ApiCartItem, url: string, store: Store): ResolvedProduct {
+  const pd = item.priceDetails
+  // Trust the server's conversions rather than re-deriving them from INR.
+  const priceUSD =
+    (pd?.paymentCurrency === 'USD' ? pd?.priceInPaymentCurrency : undefined) ??
+    (pd?.userCurrency === 'USD' ? pd?.priceInUserCurrency : undefined) ??
+    pd?.priceInPaymentCurrency ??
+    0
+  return {
+    url,
+    store,
+    cartItemId: item.id,
+    title: item.productTitle ?? 'Product',
+    priceINR: pd?.priceInBaseCurrency ?? 0,
+    priceUSD,
+    imageUrl: item.imageUrl,
+    emoji: PLACEHOLDER_EMOJI,
+    weightKg: 0.5,
+    variants: [],
+  }
+}
+
 /**
  * Resolve a product URL into displayable product data.
  *
@@ -104,28 +133,26 @@ export async function resolveProduct(url: string, storeApiId?: number): Promise<
     throw new Error('We could not identify that store. Please try another link.')
   }
 
-  await api.addCartItem({ storeId, productUrl: url, count: 1 })
+  // Reuse an existing cart entry for this link rather than adding another —
+  // resolving the same URL twice must not create duplicate cart items.
+  const priced = (it: api.ApiCartItem) => Boolean(it.productTitle)
+  const sameUrl = (it: api.ApiCartItem) => it.productUrl === url
 
-  // Poll the cart until the scraper fills in the product details.
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    const cart = await api.getCart()
-    const item = cart.find((it) => it.productUrl === url)
-    if (item?.productTitle) {
-      const priceINR =
-        item.priceDetails?.priceInBaseCurrency ?? item.priceDetails?.priceInUserCurrency ?? 0
-      return {
-        url,
-        store,
-        cartItemId: item.id,
-        title: item.productTitle,
-        priceINR,
-        imageUrl: item.imageUrl,
-        emoji: PLACEHOLDER_EMOJI,
-        weightKg: 0.5,
-        variants: [],
-      }
-    }
+  const existing = (await api.getCart()).filter(sameUrl)
+  const alreadyPriced = existing.find(priced)
+  if (alreadyPriced) return toResolved(alreadyPriced, url, store)
+
+  // Only add when this link isn't in the cart at all; if it is there but still
+  // being priced, fall through to polling.
+  if (existing.length === 0) {
+    await api.addCartItem({ storeId, productUrl: url, count: 1 })
+  }
+
+  // Pricing is asynchronous (status NEW → PRICED), so poll for the details.
+  for (let attempt = 0; attempt < 8; attempt += 1) {
     await new Promise((r) => setTimeout(r, 1200))
+    const item = (await api.getCart()).filter(sameUrl).find(priced)
+    if (item) return toResolved(item, url, store)
   }
 
   throw new Error(
@@ -133,10 +160,10 @@ export async function resolveProduct(url: string, storeApiId?: number): Promise<
   )
 }
 
-/** Landed-cost estimate in the given currency. Mock rates, API-ready shape. */
-export function landedCost(product: ResolvedProduct, qty: number, currency: string): LandedCost {
-  const item = inrTo(currency, product.priceINR) * qty
-  const shipping = Math.max(6, product.weightKg * qty * 11) * (FX_RATES[currency]?.rate ?? 1) * 83.2
+/** Landed-cost estimate in USD; format with the app's currency context. */
+export function landedCost(product: ResolvedProduct, qty: number): LandedCost {
+  const item = product.priceUSD * qty
+  const shipping = Math.max(6, product.weightKg * qty * 11)
   const serviceFee = item * 0.07
   const duties = item * 0.1
   const itemPayment = item + serviceFee

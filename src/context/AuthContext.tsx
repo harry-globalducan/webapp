@@ -25,7 +25,13 @@ interface StoredAuth {
 function load(): StoredAuth | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as StoredAuth) : null
+    const stored = raw ? (JSON.parse(raw) as StoredAuth) : null
+    // Prime the client synchronously. Child providers fetch in their own
+    // effects, which React runs *before* this provider's effects — without
+    // this the first requests after a refresh would go out with no token,
+    // 403, and trip the auth-failure handler into signing the user out.
+    api.setAuthToken(stored?.token ?? null)
+    return stored
   } catch {
     return null
   }
