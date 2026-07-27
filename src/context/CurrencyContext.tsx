@@ -17,30 +17,41 @@ const BASE: CurrencyCode = 'USD'
 
 export type CurrencyCode = string
 
-/** Indicative USD → X rates. Replace with live rates when available. */
+/**
+ * Indicative USD → X rates, covering every code returned by
+ * GET /api/v1/home/currencies. Replace with a live rates feed when available.
+ */
 const FALLBACK_RATES: Record<string, number> = {
   USD: 1,
-  INR: 88.5,
-  EUR: 0.92,
-  GBP: 0.79,
   AED: 3.67,
-  SAR: 3.75,
-  QAR: 3.64,
-  OMR: 0.385,
+  AMD: 385.0,
+  ARS: 1010.0,
+  AUD: 1.5,
   BHD: 0.376,
-  KWD: 0.307,
-  MVR: 15.42,
-  MUR: 46.5,
-  SCR: 14.2,
-  NPR: 141.6,
   BTN: 88.5,
+  CAD: 1.36,
+  CLP: 950.0,
+  EUR: 0.92,
+  FJD: 2.25,
+  GBP: 0.79,
+  INR: 88.5,
+  KWD: 0.307,
+  MMK: 2100.0,
+  MUR: 46.5,
+  MXN: 18.5,
+  MYR: 4.2,
+  MVR: 15.42,
+  NPR: 141.6,
+  NZD: 1.64,
+  OMR: 0.385,
+  RUB: 90.0,
+  SAR: 3.75,
+  SCR: 14.2,
+  SGD: 1.29,
+  // Extra codes kept for resilience if the API adds them later.
+  QAR: 3.64,
   LKR: 300.0,
   BDT: 122.0,
-  SGD: 1.29,
-  MYR: 4.2,
-  AUD: 1.5,
-  CAD: 1.36,
-  NZD: 1.64,
   CHF: 0.87,
   JPY: 150.0,
   ZAR: 18.0,

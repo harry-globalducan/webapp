@@ -29,8 +29,9 @@ function toStore(s: api.ApiStore): Store {
   return {
     name: s.name,
     domain: domainFromUrl(s.url ?? '', s.name.toLowerCase().replace(/\s+/g, '') + '.com'),
-    category: CATEGORY_MAP[s.category ?? ''] ?? 'Fashion',
+    category: CATEGORY_MAP[s.category ?? ''] ?? 'Electronics',
     preferred: s.preferred,
+    logo: s.image || undefined,
   }
 }
 

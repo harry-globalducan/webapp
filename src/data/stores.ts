@@ -5,6 +5,8 @@ export interface Store {
   domain: string
   category: StoreCategory
   preferred?: boolean
+  /** Absolute logo URL from the API; falls back to a favicon when absent. */
+  logo?: string
   /** Marketing line for featured (preferred) store cards */
   offer?: string
   /** Typical door-to-door delivery estimate */

@@ -14,7 +14,7 @@ function StoreLogo({ store, size }: { store: Store; size: string }) {
   }
   return (
     <img
-      src={`https://www.google.com/s2/favicons?domain=${store.domain}&sz=128`}
+      src={store.logo ?? `https://www.google.com/s2/favicons?domain=${store.domain}&sz=128`}
       alt={store.name}
       className={`${size} rounded-xl object-contain`}
       loading="lazy"

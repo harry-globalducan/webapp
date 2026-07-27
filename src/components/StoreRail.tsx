@@ -30,9 +30,9 @@ export default function StoreRail() {
             >
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-navy-900/8 bg-white shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-tangerine-300 group-hover:shadow-md dark:border-white/10 dark:bg-white/5">
                 <img
-                  src={`https://www.google.com/s2/favicons?domain=${store.domain}&sz=64`}
+                  src={store.logo ?? `https://www.google.com/s2/favicons?domain=${store.domain}&sz=64`}
                   alt=""
-                  className="h-6 w-6 rounded"
+                  className="h-6 w-6 rounded object-contain"
                   loading="lazy"
                 />
               </span>
