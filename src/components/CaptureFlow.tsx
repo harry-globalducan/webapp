@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Link2,
@@ -12,6 +12,7 @@ import {
   RotateCcw,
   Heart,
   ClipboardPaste,
+  LogIn,
 } from 'lucide-react'
 import {
   resolveProduct,
@@ -29,9 +30,8 @@ import { useWishlist } from '../context/WishlistContext'
 import CountUp from './CountUp'
 import type { Store } from '../data/stores'
 
-type Phase = 'idle' | 'resolving' | 'resolved' | 'added' | 'error'
+type Phase = 'idle' | 'resolving' | 'resolved' | 'added' | 'error' | 'auth'
 
-const DEMO_URL = 'https://www.amazon.in/dp/B09B8V1LZ3'
 
 interface CaptureFlowProps {
   /** URL to resolve immediately on mount (share target / bookmarklet / clipboard). */
@@ -58,20 +58,36 @@ export default function CaptureFlow({
   const [wishSaved, setWishSaved] = useState(false)
   const [pasteHint, setPasteHint] = useState('')
   const [detected, setDetected] = useState<Store | null>(null)
+  const [pendingUrl, setPendingUrl] = useState('')
   const { isAuthed } = useAuth()
   const { stores: liveStores } = useHomeData()
 
+  // Read these through refs so `resolve` keeps a stable identity — otherwise the
+  // auto-resolve effect below re-runs whenever the store list loads, re-fetching
+  // (and re-adding) a product that was already captured.
+  const authedRef = useRef(isAuthed)
+  const storesRef = useRef(liveStores)
+  useEffect(() => {
+    authedRef.current = isAuthed
+    storesRef.current = liveStores
+  }, [isAuthed, liveStores])
+
+  /** URLs already auto-resolved on mount, so we never fetch the same one twice. */
+  const autoResolved = useRef<string | null>(null)
+
   const resolve = useCallback(async (target: string) => {
     if (!target.trim()) return
-    if (!isAuthed) {
-      setError('Please sign in first — we fetch product details against your account.')
-      setPhase('error')
+    if (!authedRef.current) {
+      setPendingUrl(target.trim())
+      setPhase('auth')
       return
     }
     setPhase('resolving')
     setError('')
     try {
-      const storeApiId = liveStores.find((st) => st.domain === detectStore(target)?.domain)?.apiId
+      const storeApiId = storesRef.current.find(
+        (st) => st.domain === detectStore(target)?.domain,
+      )?.apiId
       const p = await resolveProduct(target.trim(), storeApiId)
       setProduct(p)
       setChosen(Object.fromEntries(p.variants.map((v) => [v.label, v.options[0]])))
@@ -85,13 +101,13 @@ export default function CaptureFlow({
     }
     // hasWish is stable enough for post-resolve UI; omit from deps to avoid remount loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthed, liveStores])
+  }, [])
 
   useEffect(() => {
-    if (initialUrl) {
-      setUrl(initialUrl)
-      void resolve(initialUrl)
-    }
+    if (!initialUrl || autoResolved.current === initialUrl) return
+    autoResolved.current = initialUrl
+    setUrl(initialUrl)
+    void resolve(initialUrl)
   }, [initialUrl, resolve])
 
   useEffect(() => {
@@ -228,6 +244,49 @@ export default function CaptureFlow({
           {pasteHint && (
             <span className={`text-xs ${light ? 'text-slate-500' : 'text-white/50'}`}>{pasteHint}</span>
           )}
+          {phase === 'auth' && (
+            <div
+              className={`mt-4 rounded-2xl border p-5 text-left ${
+                light
+                  ? 'border-navy-900/10 bg-cream-50 dark:border-white/10 dark:bg-white/5'
+                  : 'border-white/15 bg-white/10'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-tangerine-100 text-tangerine-600 dark:bg-tangerine-500/15 dark:text-tangerine-300">
+                  <LogIn className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-semibold ${light ? 'text-navy-900 dark:text-white' : 'text-white'}`}>
+                    Sign in to fetch this product
+                  </p>
+                  <p className={`mt-1 text-xs leading-relaxed ${light ? 'text-slate-500 dark:text-slate-400' : 'text-white/70'}`}>
+                    We read the live price and details from the store against your account, then
+                    add it to your Ducan cart. We&apos;ll bring you right back here.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Link
+                      to={`/login?redirect=${encodeURIComponent(`/capture?url=${encodeURIComponent(pendingUrl)}`)}`}
+                      className="rounded-full bg-navy-800 px-5 py-2 text-xs font-semibold text-white transition hover:bg-navy-700 dark:bg-tangerine-500 dark:hover:bg-tangerine-400"
+                    >
+                      Sign in
+                    </Link>
+                    <Link
+                      to={`/register?redirect=${encodeURIComponent(`/capture?url=${encodeURIComponent(pendingUrl)}`)}`}
+                      className={`rounded-full border px-5 py-2 text-xs font-semibold transition ${
+                        light
+                          ? 'border-navy-900/15 text-navy-800 hover:border-navy-400 dark:border-white/20 dark:text-white'
+                          : 'border-white/25 text-white hover:border-white/50'
+                      }`}
+                    >
+                      Create account
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {phase === 'error' && (
             <p
               className={`flex items-center gap-1.5 text-sm font-medium ${
@@ -238,22 +297,6 @@ export default function CaptureFlow({
             </p>
           )}
         </div>
-        {phase === 'idle' && !url.trim() && (
-          <button
-            type="button"
-            onClick={() => {
-              setUrl(DEMO_URL)
-              void resolve(DEMO_URL)
-            }}
-            className={`text-xs font-semibold underline-offset-2 transition hover:underline ${
-              light
-                ? 'text-navy-600 hover:text-tangerine-600 dark:text-tangerine-300'
-                : 'text-tangerine-300 hover:text-tangerine-200'
-            }`}
-          >
-            Try a sample Amazon link
-          </button>
-        )}
       </div>
 
       {phase === 'resolving' && (
