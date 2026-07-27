@@ -11,6 +11,11 @@ export interface ResolvedProduct {
   store: Store
   /** Server cart-item id, present once the product has been added. */
   cartItemId?: string
+  /**
+   * Quantity already in the cart for this link before this resolve ran.
+   * Adding again tops this up rather than creating a duplicate entry.
+   */
+  existingQty: number
   title: string
   /** Store price in its base currency (INR) — shown as "x in store". */
   priceINR: number
@@ -89,7 +94,12 @@ export function extractUrl(text: string): string | null {
 
 
 /** Map a priced cart item into the shape the capture UI renders. */
-function toResolved(item: api.ApiCartItem, url: string, store: Store): ResolvedProduct {
+function toResolved(
+  item: api.ApiCartItem,
+  url: string,
+  store: Store,
+  existingQty = 0,
+): ResolvedProduct {
   const pd = item.priceDetails
   // Trust the server's conversions rather than re-deriving them from INR.
   const priceUSD =
@@ -101,6 +111,7 @@ function toResolved(item: api.ApiCartItem, url: string, store: Store): ResolvedP
     url,
     store,
     cartItemId: item.id,
+    existingQty,
     title: item.productTitle ?? 'Product',
     priceINR: pd?.priceInBaseCurrency ?? 0,
     priceUSD,
@@ -137,8 +148,9 @@ export async function resolveProduct(url: string, storeApiId?: number): Promise<
   const sameUrl = (it: api.ApiCartItem) => it.productUrl === url
 
   const existing = (await api.getCart()).filter(sameUrl)
+  const existingQty = existing.reduce((sum, it) => sum + (it.count ?? 1), 0)
   const alreadyPriced = existing.find(priced)
-  if (alreadyPriced) return toResolved(alreadyPriced, url, store)
+  if (alreadyPriced) return toResolved(alreadyPriced, url, store, existingQty)
 
   // Only add when this link isn't in the cart at all; if it is there but still
   // being priced, fall through to polling.
@@ -150,7 +162,7 @@ export async function resolveProduct(url: string, storeApiId?: number): Promise<
   for (let attempt = 0; attempt < 8; attempt += 1) {
     await new Promise((r) => setTimeout(r, 1200))
     const item = (await api.getCart()).filter(sameUrl).find(priced)
-    if (item) return toResolved(item, url, store)
+    if (item) return toResolved(item, url, store, existingQty)
   }
 
   throw new Error(

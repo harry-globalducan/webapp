@@ -1,29 +1,20 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Heart, ShoppingCart, Trash2, Link2, HeartOff } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
 import { useWishlist } from '../context/WishlistContext'
-import { useCart } from '../context/CartContext'
 import { useCurrency } from '../context/CurrencyContext'
 
 export default function Wishlist() {
   const { formatPrice } = useCurrency()
   const { items, remove, clear, count } = useWishlist()
-  const { add: addToCart } = useCart()
+  const navigate = useNavigate()
 
+  // The cart lives on the server, so adding goes through the capture flow,
+  // which fetches live pricing for the link before adding it.
   const moveToCart = (id: string) => {
     const item = items.find((it) => it.id === id)
-    if (!item) return
-    addToCart({
-      title: item.title,
-      store: item.store,
-      priceUSD: item.priceUSD,
-      qty: 1,
-      emoji: item.emoji,
-      imageUrl: item.imageUrl,
-      url: item.url,
-      variants: item.variants,
-    })
-    remove(id)
+    if (!item?.url) return
+    navigate(`/capture?url=${encodeURIComponent(item.url)}`)
   }
 
   return (

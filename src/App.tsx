@@ -51,7 +51,7 @@ function PageRoutes() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/cart" element={<RequireAuth><Cart /></RequireAuth>} />
-        <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/wishlist" element={<RequireAuth><Wishlist /></RequireAuth>} />
         <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
         <Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />
         <Route path="/login" element={<Login />} />

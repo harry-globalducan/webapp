@@ -1,6 +1,17 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Minus, Plus, Trash2, ShieldCheck, Plane, ShoppingCart, Heart } from 'lucide-react'
+import {
+  Minus,
+  Plus,
+  Trash2,
+  ShieldCheck,
+  Plane,
+  ShoppingCart,
+  Heart,
+  CalendarClock,
+  MapPin,
+  ChevronDown,
+} from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useAddresses } from '../context/AddressContext'
 import { ApiError } from '../lib/api'
@@ -16,7 +27,7 @@ export default function Cart() {
   const navigate = useNavigate()
   const [placing, setPlacing] = useState(false)
   const [orderError, setOrderError] = useState<string | null>(null)
-  const { active } = useAddresses()
+  const { active, addresses, setDefault } = useAddresses()
 
   const subtotal = items.reduce((sum, it) => sum + it.priceUSD * it.qty, 0)
   const serviceFee = subtotal * 0.07
@@ -133,6 +144,17 @@ export default function Cart() {
                 <div className="mt-2 font-display text-lg font-bold text-navy-900 dark:text-white">
                   {formatPrice(item.priceUSD)}
                 </div>
+                {item.expectedDispatchDate && (
+                  <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <CalendarClock className="h-3.5 w-3.5 text-navy-400" />
+                    Arrives at our warehouse by{' '}
+                    {new Date(item.expectedDispatchDate).toLocaleDateString(undefined, {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2 rounded-full border border-navy-900/10 px-1.5 py-1">
                 <button
@@ -211,11 +233,59 @@ export default function Cart() {
               weighs less, the difference is refunded to your Ducan wallet.
             </p>
           </dl>
+          {/* Delivery address — pick one, or add the first */}
+          <div className="mt-5 rounded-2xl border border-navy-900/10 p-4 dark:border-white/10">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-navy-500 dark:text-slate-400">
+              <MapPin className="h-3 w-3" /> Deliver to
+            </div>
+
+            {addresses.length === 0 ? (
+              <div className="mt-2">
+                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  You have no delivery address yet — add one so we know where to ship.
+                </p>
+                <Link
+                  to="/addresses"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-navy-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-navy-700 dark:bg-tangerine-500 dark:hover:bg-tangerine-400"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add delivery address
+                </Link>
+              </div>
+            ) : (
+              <div className="mt-2">
+                <label className="sr-only" htmlFor="cart-address">
+                  Delivery address
+                </label>
+                <div className="relative">
+                  <select
+                    id="cart-address"
+                    value={active?.id ?? ''}
+                    onChange={(e) => setDefault(e.target.value)}
+                    className="w-full appearance-none rounded-xl border border-navy-900/10 bg-white py-2.5 pl-3 pr-9 text-sm font-medium text-navy-900 outline-none transition focus:border-navy-400 dark:border-white/10 dark:bg-black dark:text-white"
+                  >
+                    {addresses.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.label} · {a.city}, {a.country}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-400" />
+                </div>
+                <Link
+                  to="/addresses"
+                  className="mt-2 inline-block text-[11px] font-semibold text-navy-600 hover:underline dark:text-tangerine-300"
+                >
+                  Manage addresses →
+                </Link>
+              </div>
+            )}
+          </div>
+
           {orderError && (
             <p className="mt-4 text-xs font-medium text-red-600 dark:text-red-400">{orderError}</p>
           )}
           <button
-            disabled={items.length === 0 || placing}
+            disabled={items.length === 0 || placing || addresses.length === 0}
             onClick={() => void placeOrder()}
             className="mt-6 w-full rounded-full bg-navy-800 py-3.5 text-sm font-semibold text-white shadow-xl shadow-navy-800/25 transition hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-40"
           >

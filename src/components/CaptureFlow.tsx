@@ -34,7 +34,7 @@ interface CaptureFlowProps {
 
 export default function CaptureFlow({ initialUrl = '', variant = 'light' }: CaptureFlowProps) {
   const light = variant === 'light'
-  const { add } = useCart()
+  const { addQuantity } = useCart()
   const { toggle: toggleWish, has: hasWish } = useWishlist()
   const [url, setUrl] = useState(initialUrl)
   const [phase, setPhase] = useState<Phase>('idle')
@@ -46,6 +46,7 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
   const [pasteHint, setPasteHint] = useState('')
   const [detected, setDetected] = useState<Store | null>(null)
   const [pendingUrl, setPendingUrl] = useState('')
+  const [adding, setAdding] = useState(false)
   const { isAuthed } = useAuth()
   const { stores: liveStores } = useHomeData()
   const { formatPrice } = useCurrency()
@@ -129,19 +130,21 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
     }
   }
 
-  const addToCart = () => {
-    if (!product) return
-    add({
-      title: product.title,
-      store: product.store.name,
-      priceUSD: product.priceUSD,
-      qty,
-      emoji: product.emoji,
-      imageUrl: product.imageUrl,
-      url: product.url,
-      variants: chosen,
-    })
-    setPhase('added')
+  const addToCart = async () => {
+    if (!product?.cartItemId) return
+    setAdding(true)
+    setError('')
+    try {
+      // Resolving already created (or found) the row, so adding tops up the
+      // quantity that was there rather than creating a duplicate entry.
+      await addQuantity(product.cartItemId, product.existingQty + qty)
+      setPhase('added')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not add this to your cart.')
+      setPhase('error')
+    } finally {
+      setAdding(false)
+    }
   }
 
   const saveWishlist = () => {
@@ -476,10 +479,16 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={addToCart}
-                    className="flex items-center gap-2 rounded-full bg-leaf-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-leaf-500/30 transition hover:bg-leaf-400"
+                    onClick={() => void addToCart()}
+                    disabled={adding}
+                    className="flex items-center gap-2 rounded-full bg-leaf-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-leaf-500/30 transition hover:bg-leaf-400 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <ShoppingCart className="h-4 w-4" /> Add to Ducan cart
+                    {adding ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ShoppingCart className="h-4 w-4" />
+                    )}
+                    {adding ? 'Adding…' : 'Add to Ducan cart'}
                   </button>
                   <button
                     type="button"

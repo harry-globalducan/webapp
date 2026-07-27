@@ -14,12 +14,21 @@ export interface CartItem {
   imageUrl?: string
   url?: string
   variants?: Record<string, string>
+  /** Server estimate of when this item reaches our India warehouse. */
+  expectedDispatchDate?: string
+  /** Server-side pricing status, e.g. NEW while the scraper is still running. */
+  status?: string
 }
 
 interface CartContextValue {
   items: CartItem[]
   count: number
-  add: (item: Omit<CartItem, 'id'>) => void
+  /**
+   * Set the quantity for a server cart item that capture has already created.
+   * Adding the same product again tops up its quantity rather than creating a
+   * second row.
+   */
+  addQuantity: (cartItemId: string, qty: number) => Promise<void>
   remove: (id: string) => void
   setQty: (id: string, qty: number) => void
   clear: () => void
@@ -49,6 +58,8 @@ function fromApi(it: api.ApiCartItem, storeName: (id?: number) => string): CartI
     imageUrl: it.imageUrl,
     url: it.productUrl,
     variants: it.variantInfo,
+    expectedDispatchDate: it.expectedDispatchDate,
+    status: it.status,
   }
 }
 
@@ -97,10 +108,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthed, tick])
 
-  // Capture already posts the item to the server, so this only reflects it
-  // locally; a refresh reconciles against the server copy.
-  const add: CartContextValue['add'] = (item) =>
-    setItems((prev) => [...prev, { ...item, id: `pending-${Date.now()}` }])
+  const addQuantity: CartContextValue['addQuantity'] = async (cartItemId, qty) => {
+    const next = Math.max(1, qty)
+    setItems((prev) => prev.map((it) => (it.id === cartItemId ? { ...it, qty: next } : it)))
+    await api.setCartItemCount(cartItemId, next)
+    refresh()
+  }
 
   const remove = (id: string) => {
     setItems((prev) => prev.filter((it) => it.id !== id))
@@ -122,7 +135,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const count = items.reduce((sum, it) => sum + it.qty, 0)
 
   return (
-    <CartContext.Provider value={{ items, count, add, remove, setQty, clear, loading, refresh }}>
+    <CartContext.Provider value={{ items, count, addQuantity, remove, setQty, clear, loading, refresh }}>
       {children}
     </CartContext.Provider>
   )
