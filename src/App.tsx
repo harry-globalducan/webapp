@@ -50,7 +50,7 @@ function PageRoutes() {
     <div key={pathname} className="animate-page-in">
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/cart" element={<Cart />} />
+        <Route path="/cart" element={<RequireAuth><Cart /></RequireAuth>} />
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
         <Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />

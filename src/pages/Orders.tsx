@@ -1,14 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Search, Package, ChevronDown, Warehouse, Plane } from 'lucide-react'
+import { Search, Package, ChevronDown, Loader2 } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
 import { useOrders } from '../context/OrdersContext'
-import { useCurrency } from '../context/CurrencyContext'
-import {
-  orderStatusSteps,
-  shippingMethods,
-  type OrderStatus,
-} from '../data/orders'
+import { orderStatusSteps, type OrderStatus } from '../data/orders'
 
 const tabs = ['All orders', ...orderStatusSteps] as const
 
@@ -38,8 +33,7 @@ function StatusProgress({ status }: { status: OrderStatus }) {
 }
 
 export default function Orders() {
-  const { formatPrice } = useCurrency()
-  const { orders, selectShipping, payShipping } = useOrders()
+  const { orders, loading } = useOrders()
   const [params] = useSearchParams()
   const placedId = params.get('placed')
   const [tab, setTab] = useState<(typeof tabs)[number]>('All orders')
@@ -101,21 +95,39 @@ export default function Orders() {
       </div>
 
       <div className="mt-6 space-y-5">
-        {visible.length === 0 && (
+        {loading && orders.length === 0 && (
+          <div className="space-y-5" aria-busy="true">
+            {[0, 1].map((i) => (
+              <div
+                key={i}
+                className="animate-pulse overflow-hidden rounded-2xl border border-navy-900/10 bg-white shadow-sm dark:border-white/10 dark:bg-black"
+              >
+                <div className="h-14 border-b border-navy-900/10 bg-cream-50 dark:border-white/10 dark:bg-white/5" />
+                <div className="space-y-3 p-6">
+                  <div className="h-3 w-40 rounded-full bg-navy-900/10 dark:bg-white/10" />
+                  <div className="h-3 w-2/3 rounded-full bg-navy-900/10 dark:bg-white/10" />
+                  <div className="h-3 w-1/3 rounded-full bg-navy-900/10 dark:bg-white/10" />
+                </div>
+              </div>
+            ))}
+            <p className="flex items-center justify-center gap-2 text-xs text-slate-400">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading your orders…
+            </p>
+          </div>
+        )}
+
+        {!loading && visible.length === 0 && (
           <div className="rounded-2xl border border-navy-900/5 bg-white p-12 text-center shadow-sm dark:border-white/10 dark:bg-black">
             <Package className="mx-auto h-8 w-8 text-navy-300" />
             <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-              No orders match — try a different search or tab.
+              {orders.length === 0
+                ? 'No orders yet — paste a product link to place your first buy request.'
+                : 'No orders match — try a different search or tab.'}
             </p>
           </div>
         )}
 
         {visible.map((order) => {
-          const canShip =
-            order.status === 'At warehouse' || order.status === 'Ready to ship'
-          const method =
-            shippingMethods.find((m) => m.id === order.shippingMethodId) ?? shippingMethods[0]
-
           return (
             <article
               key={order.id}
@@ -208,54 +220,6 @@ export default function Orders() {
                 </div>
               </div>
 
-              {canShip && (
-                <div className="border-t border-navy-900/10 bg-cream-50 px-6 py-5 dark:border-white/10 dark:bg-white/5">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2 text-sm font-semibold text-navy-900 dark:text-white">
-                        <Warehouse className="h-4 w-4 text-navy-500" />
-                        At India warehouse
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        Weight {order.weightKg?.toFixed(1) ?? '—'} kg · Free storage{' '}
-                        {order.freeStorageDays} days from arrival
-                      </p>
-                    </div>
-                    <Plane className="h-5 w-5 text-tangerine-500" />
-                  </div>
-                  <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                    {shippingMethods.map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => selectShipping(order.id, m.id)}
-                        className={`rounded-2xl border px-4 py-3 text-left transition ${
-                          order.shippingMethodId === m.id
-                            ? 'border-navy-800 bg-navy-800 text-white dark:border-tangerine-500 dark:bg-tangerine-500'
-                            : 'border-navy-900/10 bg-white hover:border-navy-300 dark:border-white/10 dark:bg-black'
-                        }`}
-                      >
-                        <div className="text-sm font-semibold">{m.label}</div>
-                        <div
-                          className={`mt-0.5 text-xs ${
-                            order.shippingMethodId === m.id ? 'text-white/70' : 'text-slate-400'
-                          }`}
-                        >
-                          {m.eta} · {formatPrice(m.priceUSD)}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    disabled={!order.shippingMethodId}
-                    onClick={() => payShipping(order.id)}
-                    className="mt-4 w-full rounded-full bg-leaf-500 py-3 text-sm font-semibold text-white shadow-lg shadow-leaf-500/25 transition hover:bg-leaf-400 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:px-8"
-                  >
-                    Pay shipping · {formatPrice(method.priceUSD)}
-                  </button>
-                </div>
-              )}
             </article>
           )
         })}

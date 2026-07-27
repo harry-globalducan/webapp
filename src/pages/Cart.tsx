@@ -2,17 +2,21 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Minus, Plus, Trash2, ShieldCheck, Plane, ShoppingCart, Heart } from 'lucide-react'
 import { useCart } from '../context/CartContext'
+import { useAddresses } from '../context/AddressContext'
+import { ApiError } from '../lib/api'
 import { useOrders } from '../context/OrdersContext'
 import { useWishlist } from '../context/WishlistContext'
 import { useCurrency } from '../context/CurrencyContext'
 
 export default function Cart() {
   const { formatPrice } = useCurrency()
-  const { items, remove, setQty, clear } = useCart()
+  const { items, remove, setQty, refresh } = useCart()
   const { add: saveWish } = useWishlist()
   const { placeBuyRequest } = useOrders()
   const navigate = useNavigate()
   const [placing, setPlacing] = useState(false)
+  const [orderError, setOrderError] = useState<string | null>(null)
+  const { active } = useAddresses()
 
   const subtotal = items.reduce((sum, it) => sum + it.priceUSD * it.qty, 0)
   const serviceFee = subtotal * 0.07
@@ -35,21 +39,28 @@ export default function Cart() {
     remove(id)
   }
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
     if (!items.length) return
+    if (!active) {
+      setOrderError('Add a delivery address before placing your order.')
+      return
+    }
     setPlacing(true)
-    const order = placeBuyRequest({
-      items: items.map((it) => ({
-        emoji: it.emoji,
-        title: it.title,
-        store: it.store,
-        qty: it.qty,
-      })),
-      itemTotalUSD: orderTotal,
-    })
-    clear()
-    setPlacing(false)
-    navigate(`/orders?placed=${order.id}`)
+    setOrderError(null)
+    try {
+      const order = await placeBuyRequest({
+        deliveryAddressId: Number(active.id),
+        itemIds: items.map((it) => it.id),
+      })
+      refresh()
+      navigate(`/orders?placed=${order.id}`)
+    } catch (err) {
+      setOrderError(
+        err instanceof ApiError ? err.message : 'Could not place your order. Please try again.',
+      )
+    } finally {
+      setPlacing(false)
+    }
   }
 
   return (
@@ -200,9 +211,12 @@ export default function Cart() {
               weighs less, the difference is refunded to your Ducan wallet.
             </p>
           </dl>
+          {orderError && (
+            <p className="mt-4 text-xs font-medium text-red-600 dark:text-red-400">{orderError}</p>
+          )}
           <button
             disabled={items.length === 0 || placing}
-            onClick={placeOrder}
+            onClick={() => void placeOrder()}
             className="mt-6 w-full rounded-full bg-navy-800 py-3.5 text-sm font-semibold text-white shadow-xl shadow-navy-800/25 transition hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {placing ? 'Placing…' : 'Place buy request'}

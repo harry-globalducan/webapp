@@ -1,23 +1,19 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import * as api from '../lib/api'
 import { useAuth } from './AuthContext'
-import {
-  shippingMethods,
-  type Order,
-  type OrderItem,
-  type OrderStatus,
-} from '../data/orders'
+import { type Order, type OrderStatus } from '../data/orders'
 
 interface PlaceBuyInput {
-  items: OrderItem[]
-  itemTotalUSD: number
+  /** Server address id the parcel ships to. */
+  deliveryAddressId: number
+  /** Server cart-item ids being ordered. */
+  itemIds: string[]
+  couponCode?: string
 }
 
 interface OrdersContextValue {
   orders: Order[]
-  placeBuyRequest: (input: PlaceBuyInput) => Order
-  selectShipping: (orderId: string, methodId: string) => void
-  payShipping: (orderId: string) => void
+  placeBuyRequest: (input: PlaceBuyInput) => Promise<Order>
   /** True when the list came from GET /api/v1/orders. */
   live: boolean
   loading: boolean
@@ -145,49 +141,21 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     }
   }, [orders, live])
 
-  const placeBuyRequest: OrdersContextValue['placeBuyRequest'] = ({ items, itemTotalUSD }) => {
-    const order: Order = {
-      id: `GD-${2800 + Math.floor(Math.random() * 700)}`,
-      placed: todayLabel(),
-      itemTotal: formatUSD(itemTotalUSD),
-      shipTo: '',
-      status: 'Buying',
-      eta: 'Purchasing from Indian stores',
-      items,
-      freeStorageDays: 30,
-    }
+  /** POST /api/v1/orders — creates the real order from cart item ids. */
+  const placeBuyRequest: OrdersContextValue['placeBuyRequest'] = async ({
+    deliveryAddressId,
+    itemIds,
+    couponCode,
+  }) => {
+    const created = await api.createOrder({ deliveryAddressId, itemIds, couponCode })
+    const order = fromApi(created)
     setOrders((prev) => [order, ...prev])
     return order
   }
 
-  const selectShipping: OrdersContextValue['selectShipping'] = (orderId, methodId) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? { ...o, shippingMethodId: methodId, status: 'Ready to ship' as OrderStatus, eta: 'Select Pay shipping to dispatch' }
-          : o,
-      ),
-    )
-  }
-
-  const payShipping: OrdersContextValue['payShipping'] = (orderId) => {
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id !== orderId) return o
-        const method = shippingMethods.find((m) => m.id === o.shippingMethodId) ?? shippingMethods[0]
-        return {
-          ...o,
-          shippingTotal: formatUSD(method.priceUSD),
-          status: 'In transit' as OrderStatus,
-          eta: `In transit · ${method.eta}`,
-        }
-      }),
-    )
-  }
-
   return (
     <OrdersContext.Provider
-      value={{ orders, placeBuyRequest, selectShipping, payShipping, live, loading, refresh }}
+      value={{ orders, placeBuyRequest, live, loading, refresh }}
     >
       {children}
     </OrdersContext.Provider>
