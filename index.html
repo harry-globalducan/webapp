@@ -66,7 +66,7 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 24px;
+        gap: 18px;
         animation: splash-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
       }
       #app-splash .badge { position: relative; height: 96px; width: 96px; display: grid; place-items: center; }
@@ -85,7 +85,42 @@
         box-shadow: 0 14px 34px rgba(0, 74, 173, 0.28);
         animation: splash-breathe 2s ease-in-out infinite;
       }
-      #app-splash .wordmark { height: 22px; width: auto; opacity: 0.92; }
+      #app-splash .wordmark { height: 27px; width: auto; opacity: 0.95; }
+      #app-splash .tagline {
+        margin: -8px 0 0;
+        font: 600 13px/1.2 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #004aad;
+        opacity: 0.75;
+      }
+      html.dark #app-splash .tagline { color: #ffb877; opacity: 0.85; }
+      /* The wordmark's "GLOBAL" is brand navy, which all but vanishes on the
+         dark backdrop — lift it rather than shipping a second asset. */
+      html.dark #app-splash .wordmark { filter: brightness(1.75) saturate(1.15); }
+
+      /*
+       * Rotating status lines. Absolutely stacked so the splash never reflows,
+       * and driven purely by CSS — this all has to run before React boots.
+       */
+      #app-splash .msgs {
+        position: relative;
+        height: 18px;
+        width: 300px;
+        margin: -4px 0 2px;
+      }
+      #app-splash .msgs span {
+        position: absolute;
+        inset: 0;
+        display: block;
+        text-align: center;
+        font: 500 12.5px/18px 'Inter', ui-sans-serif, system-ui, sans-serif;
+        color: #5b6478;
+        opacity: 0;
+        animation: splash-msg 13.2s ease-in-out infinite;
+        animation-delay: calc(var(--i) * 3.3s);
+      }
+      html.dark #app-splash .msgs span { color: rgba(255, 255, 255, 0.6); }
       #app-splash .bar {
         position: relative;
         height: 3px; width: 150px;
@@ -108,12 +143,22 @@
       @keyframes splash-drift { 0%, 100% { transform: translate(-28px, 12px); } 50% { transform: translate(28px, -18px); } }
       @keyframes splash-slide { 0% { transform: translateX(-140%); } 100% { transform: translateX(360%); } }
       @keyframes splash-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
+      @keyframes splash-msg {
+        0%   { opacity: 0; transform: translateY(5px); }
+        4%   { opacity: 1; transform: none; }
+        21%  { opacity: 1; transform: none; }
+        25%  { opacity: 0; transform: translateY(-5px); }
+        100% { opacity: 0; transform: translateY(-5px); }
+      }
       @media (prefers-reduced-motion: reduce) {
         #app-splash .ring,
         #app-splash .tile,
         #app-splash .aurora,
         #app-splash .stack,
         #app-splash .bar::after { animation: none; }
+        /* Hold the first line rather than cycling through them. */
+        #app-splash .msgs span { animation: none; opacity: 0; }
+        #app-splash .msgs span:first-child { opacity: 1; }
       }
     </style>
     <div id="root"></div>
@@ -126,6 +171,13 @@
           <img class="tile" src="/icon.svg" alt="" width="60" height="60" />
         </div>
         <img class="wordmark" src="/logo-global-ducan.png" alt="Global Ducan" width="220" height="72" />
+        <p class="tagline">Shop India. Shipped home.</p>
+        <div class="msgs">
+          <span style="--i: 0">Connecting to India&rsquo;s top stores&hellip;</span>
+          <span style="--i: 1">Amazon, Flipkart, Myntra, Nykaa &amp; more</span>
+          <span style="--i: 2">Checked and packed at our India warehouse</span>
+          <span style="--i: 3">Delivered to your door in 20+ countries</span>
+        </div>
         <div class="bar"></div>
       </div>
     </div>
