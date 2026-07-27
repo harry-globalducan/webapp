@@ -320,11 +320,20 @@ export const updateProfile = (input: {
   preferredCurrency?: string
 }) => request<UserProfile>(`${API_ROOT}/users/profile`, { method: 'PUT', body: JSON.stringify(input) })
 
+/** confirmNewPassword is @NotBlank server-side, so always send all three. */
 export const updatePassword = (currentPassword: string, newPassword: string) =>
   request<GeneralResponse>(`${API_ROOT}/users/updatePassword`, {
     method: 'POST',
-    body: JSON.stringify({ currentPassword, newPassword }),
+    body: JSON.stringify({
+      currentPassword,
+      newPassword,
+      confirmNewPassword: newPassword,
+    }),
   })
+
+/** DELETE /api/v1/users/myself — 409 if the account still has open orders. */
+export const deleteMyAccount = () =>
+  request<GeneralResponse>(`${API_ROOT}/users/myself`, { method: 'DELETE' })
 
 export const requestEmailVerification = () =>
   request<GeneralResponse>(`${API_ROOT}/users/verifyEmail`)
@@ -459,10 +468,53 @@ export interface WalletTransaction {
   createdAt?: string
 }
 
+/**
+ * A bank-transfer top-up. Created as DRAFT, moves to PENDING once the shopper
+ * submits the bank's transaction reference, then APPROVED/CREDITED by ops —
+ * or REJECTED (see rejectionReason). Drafts expire at autoRejectAt.
+ */
+export type DepositStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'CREDITED' | 'REJECTED'
+
+export interface WalletDeposit {
+  id: string
+  method?: 'BANK_TRANSFER' | 'MANUAL_ADJUSTMENT'
+  amount: number
+  /** What actually landed after SWIFT deductions — set once credited. */
+  receivedAmount?: number
+  currency?: string
+  status: DepositStatus
+  trnNumber?: string
+  bankAccountId?: string
+  notes?: string
+  rejectionReason?: string
+  approvedAt?: string
+  creditedAt?: string
+  autoRejectAt?: string
+  createdAt?: string
+}
+
 export const getWallet = () => request<WalletBalance>(`${API_ROOT}/wallet`)
 export const getWalletTransactions = () =>
   request<WalletTransaction[]>(`${API_ROOT}/wallet/transactions`)
-export const getWalletDeposits = () => request<unknown[]>(`${API_ROOT}/wallet/deposits`)
+export const getWalletDeposits = () => request<WalletDeposit[]>(`${API_ROOT}/wallet/deposits`)
+
+/** POST /api/v1/wallet/deposits — opens a draft top-up to transfer against. */
+export const createWalletDeposit = (input: {
+  amount: number
+  bankAccountId?: string
+  notes?: string
+}) =>
+  request<WalletDeposit>(`${API_ROOT}/wallet/deposits`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+
+/** PUT /api/v1/wallet/deposits/{id}/trn — hand over the bank reference. */
+export const submitDepositTrn = (depositId: string, trnNumber: string, notes?: string) =>
+  request<WalletDeposit>(`${API_ROOT}/wallet/deposits/${depositId}/trn`, {
+    method: 'PUT',
+    body: JSON.stringify({ trnNumber, ...(notes ? { notes } : {}) }),
+  })
 
 export interface ApiCoupon {
   id: string

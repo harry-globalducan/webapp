@@ -24,6 +24,75 @@ import type { Store } from '../data/stores'
 
 type Phase = 'idle' | 'resolving' | 'resolved' | 'added' | 'error' | 'auth'
 
+/**
+ * Stand-in for the resolved product card while we poll the store for a price.
+ * Deliberately mirrors the real card's structure — image, title, price,
+ * variants, quantity, cost breakdown, CTA — so nothing shifts when it swaps in.
+ */
+function ProductSkeleton({ light }: { light: boolean }) {
+  const bar = light ? 'text-navy-900 dark:text-white' : 'text-white'
+  return (
+    <div
+      aria-hidden
+      className={`mt-5 overflow-hidden rounded-3xl ${
+        light
+          ? 'border border-navy-900/8 bg-white dark:border-white/10 dark:bg-black'
+          : 'bg-white/5 backdrop-blur'
+      }`}
+    >
+      <div className="flex flex-col gap-5 p-6 sm:flex-row">
+        <div className={`shimmer h-24 w-24 shrink-0 rounded-2xl ${bar}`} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <div className={`shimmer h-4 w-4 rounded ${bar}`} />
+            <div className={`shimmer h-2.5 w-20 rounded ${bar}`} />
+          </div>
+          <div className={`shimmer mt-2 h-4 w-11/12 rounded ${bar}`} />
+          <div className={`shimmer mt-1.5 h-4 w-2/3 rounded ${bar}`} />
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <div className={`shimmer h-6 w-24 rounded ${bar}`} />
+            <div className={`shimmer h-3 w-20 rounded ${bar}`} />
+          </div>
+          <div className={`shimmer mt-4 h-2.5 w-16 rounded ${bar}`} />
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {[14, 10, 12].map((w) => (
+              <div key={w} className={`shimmer h-7 rounded-full ${bar}`} style={{ width: `${w * 4}px` }} />
+            ))}
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <div className={`shimmer h-2.5 w-8 rounded ${bar}`} />
+            <div className={`shimmer h-8 w-24 rounded-full ${bar}`} />
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={`border-t border-dashed px-6 py-4 ${
+          light
+            ? 'border-navy-900/10 bg-zinc-50 dark:border-white/10 dark:bg-white/[0.03]'
+            : 'border-white/10 bg-white/[0.03]'
+        }`}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[0, 1].map((col) => (
+            <div key={col} className="rounded-2xl p-4">
+              <div className={`shimmer h-2.5 w-24 rounded ${bar}`} />
+              <div className="mt-3 space-y-2">
+                {[0, 1, 2, 3].map((row) => (
+                  <div key={row} className="flex justify-between gap-6">
+                    <div className={`shimmer h-3 flex-1 rounded ${bar}`} />
+                    <div className={`shimmer h-3 w-14 rounded ${bar}`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className={`shimmer mt-4 h-11 w-full rounded-full ${bar}`} />
+      </div>
+    </div>
+  )
+}
 
 interface CaptureFlowProps {
   /** URL to resolve immediately on mount (share target / bookmarklet / clipboard). */
@@ -292,32 +361,7 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
         </div>
       </div>
 
-      {phase === 'resolving' && (
-        <div
-          className={`mt-5 animate-pulse rounded-3xl p-6 ${
-            light
-              ? 'border border-navy-900/8 bg-zinc-50 dark:border-white/10 dark:bg-white/5'
-              : 'bg-white/5 backdrop-blur'
-          }`}
-        >
-          <div className="flex gap-5">
-            <div
-              className={`h-24 w-24 rounded-2xl ${light ? 'bg-navy-900/10 dark:bg-white/10' : 'bg-white/10'}`}
-            />
-            <div className="flex-1 space-y-3 py-2">
-              <div
-                className={`h-4 w-3/4 rounded ${light ? 'bg-navy-900/10 dark:bg-white/10' : 'bg-white/10'}`}
-              />
-              <div
-                className={`h-3 w-1/3 rounded ${light ? 'bg-navy-900/10 dark:bg-white/10' : 'bg-white/10'}`}
-              />
-              <div
-                className={`h-5 w-1/4 rounded ${light ? 'bg-navy-900/10 dark:bg-white/10' : 'bg-white/10'}`}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {phase === 'resolving' && <ProductSkeleton light={light} />}
 
       {(phase === 'resolved' || phase === 'added') && product && cost && (
         <div className="mt-5 animate-card-in overflow-hidden rounded-3xl border border-navy-900/8 bg-white text-left shadow-xl shadow-navy-900/10 dark:border-white/10 dark:bg-black">

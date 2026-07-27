@@ -14,7 +14,7 @@ import AccountLayout from '../components/AccountLayout'
 import { useAuth } from '../context/AuthContext'
 
 const hubCards = [
-  { icon: UserRound, title: 'Profile', text: 'Manage your profile, addresses and details.', to: '/addresses' },
+  { icon: UserRound, title: 'Profile', text: 'Your personal information, email and password.', to: '/profile' },
   { icon: Users, title: 'Refer & Save', text: 'Refer friends and save on your orders.', to: '/refer' },
   { icon: TicketPercent, title: 'My Coupons', text: 'Active coupons, promo codes and store deals.', to: '/coupons' },
   { icon: Package, title: 'Your orders', text: 'Track packages, view details or buy again.', to: '/orders' },

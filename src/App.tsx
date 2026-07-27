@@ -27,6 +27,7 @@ import Account from './pages/Account'
 import Capture from './pages/Capture'
 import WaysToShop from './pages/WaysToShop'
 import Addresses from './pages/Addresses'
+import Profile from './pages/Profile'
 import Coupons from './pages/Coupons'
 import Refer from './pages/Refer'
 import Support from './pages/Support'
@@ -63,6 +64,7 @@ function PageRoutes() {
         <Route path="/capture" element={<Capture />} />
         <Route path="/ways-to-shop" element={<WaysToShop />} />
         <Route path="/addresses" element={<RequireAuth><Addresses /></RequireAuth>} />
+        <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/coupons" element={<Coupons />} />
         <Route path="/refer" element={<Refer />} />
         <Route path="/support" element={<Support />} />
