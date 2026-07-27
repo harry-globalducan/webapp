@@ -19,6 +19,7 @@ export default function Wishlist() {
       priceUSD: item.priceUSD,
       qty: 1,
       emoji: item.emoji,
+      imageUrl: item.imageUrl,
       url: item.url,
       variants: item.variants,
     })
@@ -79,8 +80,17 @@ export default function Wishlist() {
               className="flex flex-col gap-4 rounded-2xl border border-navy-900/8 bg-white p-5 sm:flex-row sm:items-center dark:border-white/10 dark:bg-black"
             >
               <div className="flex min-w-0 flex-1 items-center gap-4">
-                <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-zinc-50 text-3xl dark:bg-white/5">
-                  {item.emoji}
+                <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-zinc-50 text-3xl dark:bg-white/5">
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      className="h-full w-full object-contain"
+                      loading="lazy"
+                    />
+                  ) : (
+                    item.emoji
+                  )}
                 </span>
                 <div className="min-w-0">
                   <div className="truncate font-semibold text-navy-900 dark:text-white">

@@ -55,7 +55,7 @@ export default function AddProductPanel({ initialUrl = '' }: AddProductPanelProp
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-slate-500 dark:text-slate-400">
             Copy a product URL from Amazon, Myntra, Nykaa, or any supported store. We convert the
-            price and show your item fee now — shipping is finalized after India warehouse arrival.
+            price and show your full cost now — including shipping estimated from the item's weight.
           </p>
         </div>
 

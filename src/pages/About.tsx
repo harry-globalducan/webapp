@@ -27,7 +27,7 @@ const values = [
   {
     icon: ShieldCheck,
     title: 'Transparency first',
-    text: 'Two-step pricing with duties estimated upfront. You always know the landed cost before you pay — no hidden markup on the product price.',
+    text: 'Duties and weight-based shipping are estimated upfront. You always know the landed cost before you pay — no hidden markup on the product price.',
     tint: 'bg-leaf-100 text-leaf-600 dark:bg-leaf-500/15 dark:text-leaf-300',
   },
   {
@@ -130,9 +130,10 @@ export default function About() {
                   then consolidate everything into a single box with one tracking number.
                 </p>
                 <p>
-                  You pay in two clear steps: the item fee upfront so we can purchase, then
-                  international shipping once we know the real weight. Duties are estimated before
-                  you commit, so there are no surprises at your door.
+                  You pay once, up front: the item price, our service fee, and international
+                  shipping estimated from the item&apos;s weight. Duties are estimated before you
+                  commit, so there are no surprises at your door — and if the packed parcel weighs
+                  less than quoted, we refund the difference to your wallet.
                 </p>
               </div>
             </Reveal>

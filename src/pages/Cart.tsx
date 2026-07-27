@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Minus, Plus, Trash2, ShieldCheck, Plane, ShoppingCart, Warehouse, Heart } from 'lucide-react'
+import { Minus, Plus, Trash2, ShieldCheck, Plane, ShoppingCart, Heart } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useOrders } from '../context/OrdersContext'
 import { useWishlist } from '../context/WishlistContext'
-import CountUp from '../components/CountUp'
 import { useCurrency } from '../context/CurrencyContext'
 
 export default function Cart() {
@@ -17,8 +16,9 @@ export default function Cart() {
 
   const subtotal = items.reduce((sum, it) => sum + it.priceUSD * it.qty, 0)
   const serviceFee = subtotal * 0.07
-  const itemPayment = subtotal + serviceFee
+  // Estimated from the tentative weight of the items in the cart.
   const shippingEst = items.length ? Math.max(6, items.reduce((s, it) => s + it.qty, 0) * 5.5) : 0
+  const orderTotal = subtotal + serviceFee + shippingEst
 
   const saveForLater = (id: string) => {
     const item = items.find((it) => it.id === id)
@@ -28,6 +28,7 @@ export default function Cart() {
       store: item.store,
       priceUSD: item.priceUSD,
       emoji: item.emoji,
+      imageUrl: item.imageUrl,
       url: item.url,
       variants: item.variants,
     })
@@ -44,7 +45,7 @@ export default function Cart() {
         store: it.store,
         qty: it.qty,
       })),
-      itemTotalUSD: itemPayment,
+      itemTotalUSD: orderTotal,
     })
     clear()
     setPlacing(false)
@@ -55,8 +56,7 @@ export default function Cart() {
     <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">My cart</h1>
       <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-        Pay the item fee now. International shipping is finalized after items arrive at our India
-        warehouse.
+        One payment covers your items, our service fee and estimated international shipping.
       </p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.7fr_1fr]">
@@ -96,11 +96,20 @@ export default function Cart() {
               key={item.id}
               className="flex items-center gap-5 rounded-3xl border border-navy-900/5 bg-white dark:border-white/10 dark:bg-black p-5 shadow-sm"
             >
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-cream-200 text-4xl dark:bg-white/10">
-                {item.emoji}
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-cream-200 text-4xl dark:bg-white/10">
+                {item.imageUrl ? (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="h-full w-full object-contain"
+                    loading="lazy"
+                  />
+                ) : (
+                  item.emoji
+                )}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate font-semibold text-navy-900 dark:text-white">{item.title}</div>
+                <div className="line-clamp-2 font-semibold text-navy-900 dark:text-white">{item.title}</div>
                 <div className="mt-0.5 text-xs font-medium uppercase tracking-wide text-slate-400">
                   {item.store}
                   {item.variants && Object.keys(item.variants).length > 0 && (
@@ -155,15 +164,12 @@ export default function Cart() {
         <aside className="h-fit rounded-3xl border border-navy-900/5 bg-white dark:border-white/10 dark:bg-black p-7 shadow-sm">
           <h2 className="font-display text-lg font-semibold">Order summary</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Two-step proxy checkout — Doorzo-style, India warehouse.
+            One payment covers the items, our service fee, estimated shipping and duties.
           </p>
           <dl className="mt-5 space-y-3 text-sm tabular-nums">
             <div className="rounded-2xl bg-cream-50 p-4 dark:bg-white/5">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-tangerine-600">
-                1 · Pay now
-              </div>
-              <div className="mt-2 flex justify-between">
-                <dt className="text-slate-500 dark:text-slate-400">Subtotal</dt>
+              <div className="flex justify-between">
+                <dt className="text-slate-500 dark:text-slate-400">Items</dt>
                 <dd className="font-semibold text-navy-900 dark:text-white">
                   {formatPrice(subtotal)}
                 </dd>
@@ -174,27 +180,25 @@ export default function Cart() {
                   {formatPrice(serviceFee)}
                 </dd>
               </div>
-              <div className="mt-2 flex justify-between border-t border-navy-900/10 pt-2 text-base">
-                <dt className="font-semibold text-navy-900 dark:text-white">Item payment</dt>
-                <dd className="font-display text-xl font-bold text-navy-900 dark:text-white">
-                  <CountUp value={itemPayment} prefix="$" />
-                </dd>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-dashed border-navy-900/15 p-4">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-navy-500">
-                <Warehouse className="h-3 w-3" /> 2 · After warehouse
-              </div>
-              <div className="mt-2 flex justify-between">
-                <dt className="text-slate-500 dark:text-slate-400">Intl. shipping (est.)</dt>
+              <div className="mt-1.5 flex justify-between">
+                <dt className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                  <Plane className="h-3.5 w-3.5" /> Intl. shipping (est.)
+                </dt>
                 <dd className="font-semibold text-navy-900 dark:text-white">
                   {formatPrice(shippingEst)}
                 </dd>
               </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
-                Final weight and method chosen once goods arrive — free storage for 30 days.
-              </p>
+              <div className="mt-3 flex items-baseline justify-between border-t border-navy-900/10 pt-3 text-base dark:border-white/10">
+                <dt className="font-semibold text-navy-900 dark:text-white">Total to pay</dt>
+                <dd className="font-display text-xl font-bold text-navy-900 dark:text-white">
+                  {formatPrice(orderTotal)}
+                </dd>
+              </div>
             </div>
+            <p className="px-1 text-[11px] leading-relaxed text-slate-400">
+              Shipping is estimated from the item&apos;s expected weight. If the packed parcel
+              weighs less, the difference is refunded to your Ducan wallet.
+            </p>
           </dl>
           <button
             disabled={items.length === 0 || placing}

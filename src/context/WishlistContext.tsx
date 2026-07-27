@@ -6,6 +6,8 @@ export interface WishlistItem {
   store: string
   priceUSD: number
   emoji: string
+  /** Real product image from the scraper, when available. */
+  imageUrl?: string
   url?: string
   variants?: Record<string, string>
   savedAt: string

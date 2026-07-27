@@ -219,7 +219,7 @@ export const restrictions: RestrictionGroup[] = [
 
 /** Short reassurance points shown near the fee table. */
 export const feeHighlights = [
-  'Two-step payment: item fee first, then real-weight shipping — you only pay actual postage.',
+  'Shipping is quoted from the item weight up front — if the packed parcel is lighter, we refund the difference.',
   'Consolidate multiple stores into one parcel to save on international shipping.',
   '30 days of free storage at our India warehouse while you gather your haul.',
   'Photo QC on every item before it leaves India — no blind shipping.',

@@ -31,13 +31,11 @@ const PLACEHOLDER_EMOJI = '\u{1F4E6}'
 
 export interface LandedCost {
   item: number
+  /** Estimated international shipping, based on the item's tentative weight. */
   shipping: number
   serviceFee: number
   duties: number
-  /** Item + proxy fee — paid now */
-  itemPayment: number
-  /** Intl shipping + duties — paid after warehouse */
-  shipLater: number
+  /** Everything above — charged as a single payment up front. */
   total: number
 }
 
@@ -163,11 +161,11 @@ export async function resolveProduct(url: string, storeApiId?: number): Promise<
 /** Landed-cost estimate in USD; format with the app's currency context. */
 export function landedCost(product: ResolvedProduct, qty: number): LandedCost {
   const item = product.priceUSD * qty
+  // Shipping is quoted from the tentative weight; the server recalculates it
+  // from the actual weight once the parcel is packed.
   const shipping = Math.max(6, product.weightKg * qty * 11)
   const serviceFee = item * 0.07
   const duties = item * 0.1
-  const itemPayment = item + serviceFee
-  const shipLater = shipping + duties
-  const total = itemPayment + shipLater
-  return { item, shipping, serviceFee, duties, itemPayment, shipLater, total }
+  const total = item + serviceFee + shipping + duties
+  return { item, shipping, serviceFee, duties, total }
 }

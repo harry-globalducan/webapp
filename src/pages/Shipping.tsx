@@ -63,9 +63,9 @@ export default function Shipping() {
           <span className="text-tangerine-500">restrictions</span>
         </h1>
         <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
-          Transparent, two-step pricing: pay the item fee to buy from Indian stores, then only
-          real-weight international postage once we consolidate your haul. Here's exactly what it
-          costs and what can (and can't) fly.
+          Transparent pricing: one payment covers your items, our service fee and international
+          shipping estimated from weight. Here's exactly what it costs and what can (and can't)
+          fly.
         </p>
       </div>
 

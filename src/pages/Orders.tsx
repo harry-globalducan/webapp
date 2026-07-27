@@ -79,8 +79,8 @@ export default function Orders() {
     >
       {placedId && (
         <div className="mb-6 rounded-2xl border border-leaf-500/30 bg-leaf-50 px-5 py-4 text-sm text-leaf-800 dark:border-leaf-500/30 dark:bg-leaf-500/10 dark:text-leaf-300">
-          Buy request <strong>{placedId}</strong> placed — we are purchasing from the store. You will
-          pay international shipping after items reach our India warehouse.
+          Buy request <strong>{placedId}</strong> placed — we are purchasing from the store and
+          will keep you posted as it moves to our India warehouse.
         </div>
       )}
 

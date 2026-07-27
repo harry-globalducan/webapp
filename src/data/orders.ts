@@ -24,7 +24,7 @@ export interface Order {
   placed: string
   /** Item payment already charged (product + proxy fee) */
   itemTotal: string
-  /** Intl shipping — set after warehouse / pay shipping */
+  /** Intl shipping, estimated by weight at checkout */
   shippingTotal?: string
   shipTo: string
   status: OrderStatus

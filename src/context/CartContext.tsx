@@ -7,6 +7,8 @@ export interface CartItem {
   priceUSD: number
   qty: number
   emoji: string
+  /** Real product image from the scraper, when available. */
+  imageUrl?: string
   url?: string
   variants?: Record<string, string>
 }

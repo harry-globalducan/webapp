@@ -49,7 +49,7 @@ export const guideSteps: GuideStep[] = [
       'Confirm your cart and pay the first invoice: product price plus a transparent proxy service fee. We buy on your behalf immediately.',
     details: [
       'The item fee = product price + proxy service fee, shown clearly before you confirm.',
-      'This is separate from international shipping, which you pay later by real weight.',
+      'International shipping is estimated from the item weight and included in the same payment.',
       'Store discounts, coupons and cashback are passed on to you where available.',
     ],
     link: { label: 'Capture a product', to: '/capture' },

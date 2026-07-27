@@ -137,6 +137,7 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
       priceUSD: product.priceUSD,
       qty,
       emoji: product.emoji,
+      imageUrl: product.imageUrl,
       url: product.url,
       variants: chosen,
     })
@@ -150,6 +151,7 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
       store: product.store.name,
       priceUSD: product.priceUSD,
       emoji: product.emoji,
+      imageUrl: product.imageUrl,
       url: product.url,
       variants: chosen,
     })
@@ -408,9 +410,9 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
 
           <div className="border-t border-dashed border-navy-900/10 bg-zinc-50 px-6 py-4 dark:border-white/10 dark:bg-white/[0.03]">
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-navy-900/10 bg-white p-4 dark:border-white/10 dark:bg-black">
+              <div className="rounded-2xl bg-cream-50 p-4 dark:bg-white/5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-tangerine-600">
-                  1 · Pay now — item fee
+                  What you pay
                 </div>
                 <dl className="mt-2 space-y-1 text-xs tabular-nums">
                   <div className="flex justify-between">
@@ -425,19 +427,8 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
                       {formatPrice(cost.serviceFee)}
                     </dd>
                   </div>
-                  <div className="flex justify-between border-t border-navy-900/10 pt-1.5 font-display text-base font-bold text-navy-900 dark:border-white/10 dark:text-white">
-                    <dt>Item payment</dt>
-                    <dd>{formatPrice(cost.itemPayment)}</dd>
-                  </div>
-                </dl>
-              </div>
-              <div className="rounded-2xl border border-dashed border-navy-900/15 bg-white p-4 dark:border-white/15 dark:bg-black">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-navy-500 dark:text-slate-400">
-                  2 · Pay later — after warehouse
-                </div>
-                <dl className="mt-2 space-y-1 text-xs tabular-nums">
                   <div className="flex justify-between">
-                    <dt className="text-slate-400">Intl. shipping (est.)</dt>
+                    <dt className="text-slate-400">Intl. shipping (est. by weight)</dt>
                     <dd className="font-semibold text-navy-900 dark:text-white">
                       {formatPrice(cost.shipping)}
                     </dd>
@@ -448,16 +439,16 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
                       {formatPrice(cost.duties)}
                     </dd>
                   </div>
-                  <div className="flex justify-between border-t border-navy-900/10 pt-1.5 font-semibold text-navy-900 dark:border-white/10 dark:text-white">
-                    <dt>Ship payment</dt>
-                    <dd>{formatPrice(cost.shipLater)}</dd>
-                  </div>
                 </dl>
+                <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
+                  Shipping is estimated from the expected weight. If the packed parcel weighs
+                  less, we refund the difference to your Ducan wallet.
+                </p>
               </div>
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-navy-900/10 pt-3 dark:border-white/10">
               <div>
-                <span className="text-xs text-slate-400">Estimated total (both steps)</span>
+                <span className="text-xs text-slate-400">Estimated total</span>
                 <div className="font-display text-3xl font-bold text-navy-900 dark:text-white">
                   <span>{formatPrice(cost.total)}</span>
                 </div>

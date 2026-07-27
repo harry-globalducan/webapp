@@ -56,7 +56,7 @@ const steps = [
   {
     icon: ShieldCheck,
     title: 'Consolidate & pick shipping',
-    text: 'Combine multi-store parcels, choose EMS, DHL or Air, then pay intl. shipping.',
+    text: 'Combine multi-store parcels and choose EMS, DHL or Air — shipping is quoted by weight.',
   },
   {
     icon: Plane,
@@ -208,7 +208,7 @@ export default function Home() {
                   <Plane className="h-4 w-4 text-leaf-500" /> Indian Ocean & Gulf
                 </span>
                 <span className="flex items-center gap-2">
-                  <BadgeDollarSign className="h-4 w-4 text-leaf-500" /> Two-step proxy pricing
+                  <BadgeDollarSign className="h-4 w-4 text-leaf-500" /> Transparent landed cost
                 </span>
               </div>
             </Reveal>

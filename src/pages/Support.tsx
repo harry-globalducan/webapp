@@ -75,8 +75,8 @@ const topics = [
 
 const faqs = [
   {
-    q: 'How does two-step proxy payment work?',
-    a: 'First you pay the item fee (product price + proxy service fee) so we can buy from the Indian store. After goods arrive at our India warehouse, you choose a shipping method and pay international postage based on actual weight — similar to Doorzo’s model, adapted for India.',
+    q: 'How does payment work?',
+    a: 'You pay once when you place the order. The total covers the product price, our proxy service fee, and international shipping estimated from the item’s weight, plus any duties. We then buy from the Indian store, receive and quality-check the goods at our India warehouse, and ship them to you. If the packed parcel weighs less than we quoted, the difference is refunded to your Ducan wallet.',
   },
   {
     q: 'How long does international delivery take?',
