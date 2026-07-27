@@ -21,14 +21,32 @@ const WHATSAPP_HREF = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponen
   'Hi Global Ducan, I need help with an order.',
 )}`
 
+/** Opens the ChatMaxima widget loaded in index.html. */
+function openLiveChat() {
+  const w = window as unknown as {
+    chatmaxima?: { open?: () => void; toggle?: () => void }
+    ChatMaxima?: { open?: () => void; toggle?: () => void }
+  }
+  const api = w.chatmaxima ?? w.ChatMaxima
+  if (api?.open) return api.open()
+  if (api?.toggle) return api.toggle()
+  // Widget not ready — click its launcher if present, else fall back to WhatsApp.
+  const launcher = document.querySelector<HTMLElement>(
+    '#chatmaxima-launcher, [id*="chatmaxima"] button, iframe[src*="chatmaxima"]',
+  )
+  if (launcher) return launcher.click()
+  window.open(WHATSAPP_HREF, '_blank', 'noopener')
+}
+
 const channels = [
   {
     icon: MessageCircle,
-    title: 'Chat with us',
-    sub: 'Fastest — we reply on WhatsApp within minutes',
+    title: 'Live chat',
+    sub: 'Fastest — chat with our team right here',
     action: 'Start chat',
     highlight: true,
-    href: WHATSAPP_HREF,
+    href: undefined as string | undefined,
+    onClick: openLiveChat,
   },
   {
     icon: Mail,
@@ -36,6 +54,7 @@ const channels = [
     sub: `${SUPPORT_EMAIL} · replies within 12h`,
     action: 'Write to us',
     href: `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Global Ducan support request')}`,
+    onClick: undefined,
   },
   {
     icon: Phone,
@@ -43,6 +62,7 @@ const channels = [
     sub: `${SUPPORT_PHONE_DISPLAY} · Mon–Sat, 10am–7pm IST`,
     action: 'Call now',
     href: `tel:+${WHATSAPP_NUMBER}`,
+    onClick: undefined,
   },
 ]
 
@@ -114,7 +134,19 @@ export default function Support() {
             >
               {ch.sub}
             </p>
-            {ch.href ? (
+            {ch.onClick ? (
+              <button
+                type="button"
+                onClick={ch.onClick}
+                className={`mt-4 inline-block rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                  ch.highlight
+                    ? 'bg-tangerine-500 text-white shadow-lg shadow-tangerine-500/30 hover:bg-tangerine-400'
+                    : 'border border-navy-900/15 text-navy-800/80 hover:border-navy-400 dark:border-white/15 dark:text-white dark:hover:border-white/30'
+                }`}
+              >
+                {ch.action}
+              </button>
+            ) : ch.href ? (
               <a
                 href={ch.href}
                 {...(ch.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer noopener' } : {})}

@@ -23,38 +23,8 @@ export interface DeliveryAddress {
 
 const STORAGE_KEY = 'ducan-addresses'
 
-const defaults: DeliveryAddress[] = [
-  {
-    id: 'addr-1',
-    label: 'Home',
-    name: 'Natasha',
-    city: 'Dubai Marina',
-    country: 'United Arab Emirates',
-    lines: ['Apartment 1204, Marina Heights', 'Dubai Marina', 'Dubai, United Arab Emirates'],
-    phone: '+971 50 123 4567',
-    isDefault: true,
-  },
-  {
-    id: 'addr-2',
-    label: 'Work',
-    name: 'Natasha',
-    city: 'London',
-    country: 'United Kingdom',
-    lines: ['GeoFleet Ltd, 45 Finsbury Square', 'London EC2A 1HP', 'United Kingdom'],
-    phone: '+44 7700 900123',
-    isDefault: false,
-  },
-  {
-    id: 'addr-3',
-    label: 'Family',
-    name: 'Natasha',
-    city: 'Malé',
-    country: 'Maldives',
-    lines: ['H. Seaside, Machchangolhi', 'Malé 20125', 'Maldives'],
-    phone: '+960 777 1234',
-    isDefault: false,
-  },
-]
+/** No seed data — an empty list renders a proper empty state. */
+const defaults: DeliveryAddress[] = []
 
 function load(): DeliveryAddress[] {
   try {
@@ -106,7 +76,7 @@ export function AddressProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(() => setTick((t) => t + 1), [])
 
-  // Signed-in users get their real addresses; guests keep the local list.
+  // Signed-in users get their real addresses.
   useEffect(() => {
     if (!isAuthed) {
       setLive(false)

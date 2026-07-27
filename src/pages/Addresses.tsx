@@ -1,50 +1,48 @@
-import { useState } from 'react'
-import { Plus, Home, Briefcase, Phone, CheckCircle2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Plus, Home, MapPin, Phone, CheckCircle2 } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
+import { useAddresses } from '../context/AddressContext'
+import { useAuth } from '../context/AuthContext'
 
-interface Address {
-  id: number
-  label: string
-  icon: typeof Home
-  name: string
-  lines: string[]
-  phone: string
-  isDefault: boolean
-}
-
-const initialAddresses: Address[] = [
-  {
-    id: 1,
-    label: 'Home',
-    icon: Home,
-    name: 'Natasha',
-    lines: ['Apartment 1204, Marina Heights', 'Dubai Marina', 'Dubai, United Arab Emirates'],
-    phone: '+971 50 123 4567',
-    isDefault: true,
-  },
-  {
-    id: 2,
-    label: 'Work',
-    icon: Briefcase,
-    name: 'Natasha',
-    lines: ['GeoFleet Ltd, 45 Finsbury Square', 'London EC2A 1HP', 'United Kingdom'],
-    phone: '+44 7700 900123',
-    isDefault: false,
-  },
-]
 
 export default function Addresses() {
-  const [addresses, setAddresses] = useState(initialAddresses)
-
-  const setDefault = (id: number) =>
-    setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })))
-  const remove = (id: number) => setAddresses((prev) => prev.filter((a) => a.id !== id))
+  const { addresses, setDefault, remove, loading } = useAddresses()
+  const { isAuthed } = useAuth()
 
   return (
     <AccountLayout
       title="Your addresses"
       description="Delivery addresses for every country you ship to."
     >
+      {!isAuthed && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-navy-900/10 bg-cream-50 px-5 py-4 dark:border-white/10 dark:bg-white/5">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Sign in to see and manage your delivery addresses.
+          </p>
+          <Link
+            to="/login?redirect=%2Faddresses"
+            className="rounded-full bg-navy-800 px-5 py-2 text-sm font-semibold text-white transition hover:bg-navy-700 dark:bg-tangerine-500 dark:hover:bg-tangerine-400"
+          >
+            Sign in
+          </Link>
+        </div>
+      )}
+
+      {isAuthed && !loading && addresses.length === 0 && (
+        <div className="mb-6 rounded-2xl border border-dashed border-navy-900/15 bg-cream-50 px-6 py-10 text-center dark:border-white/15 dark:bg-white/5">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-navy-100 text-navy-500 dark:bg-navy-500/20 dark:text-navy-200">
+            <Home className="h-6 w-6" />
+          </span>
+          <p className="mt-4 font-display text-lg font-semibold text-navy-900 dark:text-white">
+            No delivery addresses yet
+          </p>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
+            Add the address you want your parcels delivered to — you can save one for each country
+            you ship to.
+          </p>
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {/* Add new */}
         <button className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-navy-900/15 text-slate-400 transition hover:border-navy-400 hover:text-navy-600 dark:border-white/15 dark:hover:border-white/30 dark:hover:text-cream-50">
@@ -59,7 +57,7 @@ export default function Addresses() {
           >
             <div className="flex items-center justify-between border-b border-navy-900/10 px-5 py-3 dark:border-white/10">
               <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                <addr.icon className="h-3.5 w-3.5" /> {addr.label}
+                <MapPin className="h-3.5 w-3.5" /> {addr.label}
               </span>
               {addr.isDefault && (
                 <span className="flex items-center gap-1 rounded-full bg-leaf-100 px-2.5 py-0.5 text-[10px] font-bold text-leaf-700 dark:bg-leaf-500/20 dark:text-leaf-300">

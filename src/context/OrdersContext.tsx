@@ -2,7 +2,6 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import * as api from '../lib/api'
 import { useAuth } from './AuthContext'
 import {
-  seedOrders,
   shippingMethods,
   type Order,
   type OrderItem,
@@ -85,7 +84,8 @@ function load(): Order[] {
   } catch {
     // ignore
   }
-  return seedOrders
+  // No seed data — an empty list renders a proper empty state.
+  return []
 }
 
 function formatUSD(n: number) {
@@ -109,7 +109,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(() => setTick((t) => t + 1), [])
 
-  // Signed-in users see their real orders; guests keep the local demo list.
+  // Signed-in users see their real orders.
   useEffect(() => {
     if (!isAuthed) {
       setLive(false)
@@ -150,7 +150,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       id: `GD-${2800 + Math.floor(Math.random() * 700)}`,
       placed: todayLabel(),
       itemTotal: formatUSD(itemTotalUSD),
-      shipTo: 'Natasha · Dubai, UAE',
+      shipTo: '',
       status: 'Buying',
       eta: 'Purchasing from Indian stores',
       items,

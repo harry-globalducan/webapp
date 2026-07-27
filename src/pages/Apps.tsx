@@ -148,53 +148,40 @@ const steps = [
   { icon: Plane, title: 'Shop & ship', text: 'Sign in, paste a link, and get India delivered to your door worldwide.' },
 ]
 
-/** Phone mockup showing a mini Global Ducan app screen. */
+/** Real app screenshot in a device frame tuned to the dark hero. */
 function PhoneMock() {
   return (
-    <div className="relative mx-auto w-[260px] shrink-0">
-      {/* glow */}
-      <div className="pointer-events-none absolute -inset-8 rounded-[3rem] bg-gradient-to-br from-tangerine-400/25 via-navy-400/15 to-transparent blur-2xl" />
-      <div className="relative rounded-[2.6rem] border-[6px] border-navy-950 bg-navy-950 shadow-2xl shadow-navy-900/40 dark:border-black dark:bg-black">
-        {/* notch */}
-        <div className="absolute left-1/2 top-2 z-10 h-5 w-24 -translate-x-1/2 rounded-full bg-navy-950 dark:bg-black" />
-        <div className="overflow-hidden rounded-[2.1rem] bg-cream-50 dark:bg-[#131921]">
-          {/* app top bar */}
-          <div className="flex items-center justify-between bg-gradient-to-r from-navy-900 to-navy-800 px-4 pb-3 pt-7 text-white">
-            <span className="font-display text-sm font-bold tracking-tight">Ducan</span>
-            <ShoppingBag className="h-4 w-4 text-tangerine-300" />
-          </div>
-          {/* search */}
-          <div className="px-3 pt-3">
-            <div className="flex items-center gap-2 rounded-xl border border-navy-900/10 bg-white px-3 py-2 text-[10px] text-slate-400 dark:border-white/10 dark:bg-white/5">
-              <Link2 className="h-3 w-3" /> Paste a product link…
-            </div>
-          </div>
-          {/* tracking card */}
-          <div className="mx-3 mt-3 rounded-xl bg-white p-3 shadow-sm dark:bg-white/5">
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] font-medium text-slate-400">Order #GD-2903</span>
-              <span className="rounded-full bg-leaf-100 px-1.5 py-0.5 text-[8px] font-bold text-leaf-700 dark:bg-leaf-500/15 dark:text-leaf-300">
-                In transit
-              </span>
-            </div>
-            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-bold text-navy-900 dark:text-white">
-              <Plane className="h-3 w-3 text-tangerine-500" /> India → UAE
-            </div>
-            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-navy-900/10 dark:bg-white/10">
-              <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-tangerine-500 to-tangerine-400" />
-            </div>
-          </div>
-          {/* product tiles */}
-          <div className="grid grid-cols-2 gap-2 p-3">
-            {['🎧', '🥻', '⌚', '💄'].map((e, i) => (
-              <div
-                key={i}
-                className="flex h-14 items-center justify-center rounded-xl bg-white text-2xl shadow-sm dark:bg-white/5"
-              >
-                {e}
-              </div>
-            ))}
-          </div>
+    <div className="relative mx-auto w-[268px] shrink-0 sm:w-[300px]">
+      {/* ambient glow behind the device */}
+      <div className="pointer-events-none absolute -inset-10 rounded-[4rem] bg-gradient-to-br from-tangerine-400/25 via-navy-400/20 to-transparent blur-3xl" />
+
+      {/* device frame */}
+      <div className="relative rounded-[2.9rem] border border-white/15 bg-navy-950/80 p-2.5 shadow-2xl shadow-navy-950/60 ring-1 ring-inset ring-white/10 backdrop-blur">
+        {/* Capped height so the device sits fully inside the hero; the screen
+            is anchored to the top and fades out at the bottom edge. */}
+        <div className="relative h-[380px] overflow-hidden rounded-[2.2rem] bg-white sm:h-[440px]">
+          <img
+            src="/app-screens/hero-orders-screen.webp"
+            alt="Global Ducan app showing My Orders with live shipment tracking"
+            width={776}
+            height={1200}
+            className="block h-full w-full object-cover object-top"
+            loading="eager"
+          />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
+        </div>
+      </div>
+
+      {/* floating shipment chip */}
+      <div className="absolute -left-6 bottom-16 hidden rounded-2xl border border-white/15 bg-white/95 px-3.5 py-2 shadow-xl shadow-navy-950/40 backdrop-blur sm:block">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-medium text-slate-400">Order #GD-2903</span>
+          <span className="rounded-full bg-leaf-100 px-1.5 py-0.5 text-[9px] font-bold text-leaf-700">
+            In transit
+          </span>
+        </div>
+        <div className="mt-0.5 flex items-center gap-1.5 text-xs font-bold text-navy-900">
+          <Plane className="h-3 w-3 text-tangerine-500" /> India → UAE
         </div>
       </div>
     </div>

@@ -23,48 +23,6 @@ interface Coupon {
   state: CouponState
 }
 
-const demoCoupons: Coupon[] = [
-  {
-    code: 'WELCOME15',
-    headline: '15% off your first order',
-    detail: 'Up to $25 off the item subtotal. New customers only.',
-    scope: 'All stores',
-    expires: 'Expires Aug 31, 2026',
-    state: 'Available',
-  },
-  {
-    code: 'FREESHIP50',
-    headline: 'Free shipping over $50',
-    detail: 'International shipping fee waived on consolidated parcels.',
-    scope: 'All stores',
-    expires: 'Expires Jul 31, 2026',
-    state: 'Available',
-  },
-  {
-    code: 'BEAUTY10',
-    headline: '10% off beauty & skincare',
-    detail: 'Applies to Nykaa, The Derma Co, Aqualogica and Dr. Sheth’s.',
-    scope: 'Health & Beauty',
-    expires: 'Expires Sep 15, 2026',
-    state: 'Available',
-  },
-  {
-    code: 'DUCAN5',
-    headline: '$5 off any order',
-    detail: 'Applied to order GD-2779 on June 30.',
-    scope: 'All stores',
-    expires: 'Used Jun 30, 2026',
-    state: 'Used',
-  },
-  {
-    code: 'SUMMER20',
-    headline: '20% off fashion',
-    detail: 'Myntra, Nykaa Fashion and Jockey.',
-    scope: 'Fashion',
-    expires: 'Expired Jun 1, 2026',
-    state: 'Expired',
-  },
-]
 
 const tabs: CouponState[] = ['Available', 'Used', 'Expired']
 
@@ -105,15 +63,15 @@ export default function Coupons() {
   const { isAuthed } = useAuth()
   const { formatPrice } = useCurrency()
 
-  const { data: apiCoupons, live, error, refresh } = useApiData(() => api.getCoupons(), {
+  const { data: apiCoupons, error, refresh } = useApiData(() => api.getCoupons(), {
     enabled: isAuthed,
     fallback: [] as api.ApiCoupon[],
   })
 
   // Signed-in users see their real coupons; guests see the sample set.
   const coupons = useMemo(
-    () => (live ? apiCoupons.map((c) => fromApi(c, formatPrice)) : demoCoupons),
-    [live, apiCoupons, formatPrice],
+    () => apiCoupons.map((c) => fromApi(c, formatPrice)),
+    [apiCoupons, formatPrice],
   )
 
   const addCoupon = async (e: FormEvent) => {
@@ -162,7 +120,7 @@ export default function Coupons() {
       <ApiErrorNotice
         message={error}
         onRetry={refresh}
-        hint="Showing sample coupons until we can reach your account."
+        hint="We could not load your coupons."
       />
 
       {/* Redeem a code — POST /api/v1/discount-coupons/assign */}
