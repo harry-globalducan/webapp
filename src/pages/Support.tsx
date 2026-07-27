@@ -9,6 +9,7 @@ import {
   Undo2,
   ChevronDown,
   Clock3,
+  MessageSquare,
 } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
 
@@ -21,21 +22,31 @@ const WHATSAPP_HREF = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponen
   'Hi Global Ducan, I need help with an order.',
 )}`
 
-/** Opens the ChatMaxima widget loaded in index.html. */
-function openLiveChat() {
-  const w = window as unknown as {
-    chatmaxima?: { open?: () => void; toggle?: () => void }
-    ChatMaxima?: { open?: () => void; toggle?: () => void }
+/**
+ * Open the ChatMaxima widget loaded in index.html.
+ *
+ * The embed exposes no programmatic open API — it only renders a bubble
+ * (#chatmaxima-chatbot-bubble-button) which toggles the chat iframe. It also
+ * loads deferred, so the bubble may not exist yet on a fast click; we poll
+ * briefly rather than giving up. Resolves false if the widget never appears,
+ * so the caller can say so instead of silently sending people somewhere else.
+ */
+async function openLiveChat(): Promise<boolean> {
+  const isOpen = () => !!document.querySelector('#chatmaxima-livechat-window.chatmaxima-widget-open')
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+  // Yield first. The widget closes itself on any document-level click, and
+  // React's synthetic event only reaches document *after* this handler returns
+  // — clicking the bubble synchronously would open the panel and have the same
+  // click immediately dismiss it.
+  await wait(0)
+
+  for (let waited = 0; waited < 6000; waited += 200) {
+    if (isOpen()) return true
+    document.getElementById('chatmaxima-chatbot-bubble-button')?.click()
+    await wait(200)
   }
-  const api = w.chatmaxima ?? w.ChatMaxima
-  if (api?.open) return api.open()
-  if (api?.toggle) return api.toggle()
-  // Widget not ready — click its launcher if present, else fall back to WhatsApp.
-  const launcher = document.querySelector<HTMLElement>(
-    '#chatmaxima-launcher, [id*="chatmaxima"] button, iframe[src*="chatmaxima"]',
-  )
-  if (launcher) return launcher.click()
-  window.open(WHATSAPP_HREF, '_blank', 'noopener')
+  return isOpen()
 }
 
 const channels = [
@@ -46,7 +57,7 @@ const channels = [
     action: 'Start chat',
     highlight: true,
     href: undefined as string | undefined,
-    onClick: openLiveChat,
+    liveChat: true,
   },
   {
     icon: Mail,
@@ -54,7 +65,15 @@ const channels = [
     sub: `${SUPPORT_EMAIL} · replies within 12h`,
     action: 'Write to us',
     href: `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Global Ducan support request')}`,
-    onClick: undefined,
+    liveChat: false,
+  },
+  {
+    icon: MessageSquare,
+    title: 'WhatsApp',
+    sub: `${SUPPORT_PHONE_DISPLAY} · message us anytime`,
+    action: 'Open WhatsApp',
+    href: WHATSAPP_HREF,
+    liveChat: false,
   },
   {
     icon: Phone,
@@ -62,7 +81,7 @@ const channels = [
     sub: `${SUPPORT_PHONE_DISPLAY} · Mon–Sat, 10am–7pm IST`,
     action: 'Call now',
     href: `tel:+${WHATSAPP_NUMBER}`,
-    onClick: undefined,
+    liveChat: false,
   },
 ]
 
@@ -97,6 +116,8 @@ const faqs = [
 ]
 
 export default function Support() {
+  const [chatOpening, setChatOpening] = useState(false)
+  const [chatError, setChatError] = useState<string | null>(null)
   const [open, setOpen] = useState<number | null>(0)
 
   return (
@@ -105,7 +126,7 @@ export default function Support() {
       description="We're online 24/7 across time zones — pick a channel."
     >
       {/* Contact channels */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {channels.map((ch) => (
           <div
             key={ch.title}
@@ -134,17 +155,24 @@ export default function Support() {
             >
               {ch.sub}
             </p>
-            {ch.onClick ? (
+            {ch.liveChat ? (
               <button
                 type="button"
-                onClick={ch.onClick}
+                disabled={chatOpening}
+                onClick={async () => {
+                  setChatError(null)
+                  setChatOpening(true)
+                  const ok = await openLiveChat()
+                  setChatOpening(false)
+                  if (!ok) setChatError('Live chat could not load. Try WhatsApp or email below.')
+                }}
                 className={`mt-4 inline-block rounded-full px-5 py-2.5 text-sm font-semibold transition ${
                   ch.highlight
                     ? 'bg-tangerine-500 text-white shadow-lg shadow-tangerine-500/30 hover:bg-tangerine-400'
                     : 'border border-navy-900/15 text-navy-800/80 hover:border-navy-400 dark:border-white/15 dark:text-white dark:hover:border-white/30'
                 }`}
               >
-                {ch.action}
+                {chatOpening ? 'Opening…' : ch.action}
               </button>
             ) : ch.href ? (
               <a
@@ -171,6 +199,9 @@ export default function Support() {
               >
                 {ch.action}
               </button>
+            )}
+            {ch.liveChat && chatError && (
+              <p className="mt-3 text-xs font-medium text-tangerine-300">{chatError}</p>
             )}
           </div>
         ))}

@@ -1,13 +1,16 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Home, MapPin, Phone, CheckCircle2 } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
 import { useAddresses } from '../context/AddressContext'
 import { formatPhone } from '../lib/phone'
+import AddressForm from '../components/AddressForm'
 import { useAuth } from '../context/AuthContext'
 
 
 export default function Addresses() {
-  const { addresses, setDefault, remove, loading } = useAddresses()
+  const { addresses, setDefault, remove, loading, refresh } = useAddresses()
+  const [adding, setAdding] = useState(false)
   const { isAuthed } = useAuth()
 
   return (
@@ -29,7 +32,7 @@ export default function Addresses() {
         </div>
       )}
 
-      {isAuthed && !loading && addresses.length === 0 && (
+      {isAuthed && !loading && addresses.length === 0 && !adding && (
         <div className="mb-6 rounded-2xl border border-dashed border-navy-900/15 bg-cream-50 px-6 py-10 text-center dark:border-white/15 dark:bg-white/5">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-navy-100 text-navy-500 dark:bg-navy-500/20 dark:text-navy-200">
             <Home className="h-6 w-6" />
@@ -41,15 +44,40 @@ export default function Addresses() {
             Add the address you want your parcels delivered to — you can save one for each country
             you ship to.
           </p>
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-navy-800 px-6 py-3 text-sm font-semibold text-white transition hover:bg-navy-700 dark:bg-tangerine-500 dark:hover:bg-tangerine-400"
+          >
+            <Plus className="h-4 w-4" /> Add delivery address
+          </button>
+        </div>
+      )}
+
+      {adding && (
+        <div className="mb-6 max-w-xl">
+          <AddressForm
+            onCancel={() => setAdding(false)}
+            onSaved={() => {
+              setAdding(false)
+              refresh()
+            }}
+          />
         </div>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {/* Add new */}
-        <button className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-navy-900/15 text-slate-400 transition hover:border-navy-400 hover:text-navy-600 dark:border-white/15 dark:hover:border-white/30 dark:hover:text-cream-50">
-          <Plus className="h-8 w-8" />
-          <span className="text-sm font-semibold">Add new address</span>
-        </button>
+        {/* Add new — the empty state carries its own CTA, so don't double up. */}
+        {!adding && addresses.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-navy-900/15 text-slate-400 transition hover:border-navy-400 hover:text-navy-600 dark:border-white/15 dark:hover:border-white/30 dark:hover:text-cream-50"
+          >
+            <Plus className="h-8 w-8" />
+            <span className="text-sm font-semibold">Add new address</span>
+          </button>
+        )}
 
         {addresses.map((addr) => (
           <div

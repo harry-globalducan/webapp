@@ -64,13 +64,22 @@ export default function AddressForm({ onSaved, onCancel }: AddressFormProps) {
     }
     setSaving(true)
     try {
+      // The backend resolves the country with CountryCode.getByDisplayName, so
+      // it wants the display name ("Maldives") — an ISO code silently resolves
+      // to null. We keep the code in state only to drive the dial-code default.
+      const countryName = countries.find((c) => c.code === country)?.name
+      if (!countryName) {
+        setError('Please select a country from the list.')
+        setSaving(false)
+        return
+      }
       await api.createAddress({
         fullName: fullName.trim(),
         street1: street1.trim(),
         street2: street2.trim() || undefined,
         city: city.trim(),
         state: state.trim() || undefined,
-        country,
+        country: countryName,
         zipCode: zipCode.trim() || undefined,
         phone: toE164(dial, phone),
       })
