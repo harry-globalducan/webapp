@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import * as api from '../lib/api'
-import { type Store, type StoreCategory } from '../data/stores'
+import { setStoreRegistry, type Store, type StoreCategory } from '../data/stores'
 
 /**
  * Live catalog data from the PUBLIC /api/v1/home/** endpoints.
@@ -33,6 +33,7 @@ function toStore(s: api.ApiStore): Store {
     category: CATEGORY_MAP[s.category ?? ''] ?? 'Electronics',
     preferred: s.preferred,
     logo: s.image || undefined,
+    productRegex: s.productRegex,
   }
 }
 
@@ -67,7 +68,10 @@ export function HomeDataProvider({ children }: { children: ReactNode }) {
       if (cancelled) return
 
       if (storeRes.status === 'fulfilled' && Array.isArray(storeRes.value)) {
-        setStores(storeRes.value.filter((s) => s.active !== false).map(toStore))
+        const mapped = storeRes.value.filter((s) => s.active !== false).map(toStore)
+        setStores(mapped)
+        // Publish for non-React helpers (detectStore, clipboard assist).
+        setStoreRegistry(mapped)
         setLive(true)
       }
       if (bannerRes.status === 'fulfilled' && Array.isArray(bannerRes.value)) {

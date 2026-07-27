@@ -14,7 +14,7 @@ function StoreLogo({ store, size }: { store: Store; size: string }) {
   }
   return (
     <img
-      src={store.logo ?? `https://www.google.com/s2/favicons?domain=${store.domain}&sz=128`}
+      src={store.logo}
       alt={store.name}
       className={`${size} rounded-xl object-contain`}
       loading="lazy"
@@ -27,7 +27,7 @@ function useOpenShop(store: Store) {
   const { requestShop } = useShopGate()
   return (e: MouseEvent) => {
     e.preventDefault()
-    requestShop({ name: store.name, domain: store.domain })
+    requestShop({ name: store.name, domain: store.domain, logo: store.logo })
   }
 }
 

@@ -1,3 +1,12 @@
+/**
+ * Store types and a small live registry.
+ *
+ * There is no bundled store list — names, logos, categories and the URL
+ * patterns used to recognise a product link all come from
+ * GET /api/v1/home/stores. `HomeDataContext` publishes the fetched list here so
+ * non-React helpers such as `detectStore` can read it too.
+ */
+
 export type StoreCategory = 'Fashion' | 'Health & Beauty' | 'Electronics' | 'Home & Kids'
 
 export interface Store {
@@ -7,42 +16,25 @@ export interface Store {
   domain: string
   category: StoreCategory
   preferred?: boolean
-  /** Absolute logo URL from the API; falls back to a favicon when absent. */
+  /** Logo URL served by the API. */
   logo?: string
+  /** Patterns that identify a product page on this store. */
+  productRegex?: string[]
   /** Marketing line for featured (preferred) store cards */
   offer?: string
   /** Typical door-to-door delivery estimate */
   delivery?: string
 }
 
-export const stores: Store[] = [
-  {
-    name: 'Amazon', domain: 'amazon.in', category: 'Electronics', preferred: true,
-    offer: 'Electronics, books & everything else — millions of products',
-    delivery: '6–10 days',
-  },
-  {
-    name: 'Banarasi Threads', domain: 'banarasithreads.com', category: 'Fashion', preferred: true,
-    offer: 'Handwoven silk sarees direct from Varanasi looms',
-    delivery: '8–12 days',
-  },
-  { name: 'Flipkart', domain: 'flipkart.com', category: 'Electronics', delivery: '6–10 days' },
-  { name: 'Nykaa', domain: 'nykaa.com', category: 'Health & Beauty', delivery: '7–10 days' },
-  { name: 'Jockey', domain: 'jockey.in', category: 'Fashion', delivery: '8–12 days' },
-  { name: 'Bombay Shaving', domain: 'bombayshavingcompany.com', category: 'Health & Beauty', delivery: '7–10 days' },
-  { name: 'Myntra', domain: 'myntra.com', category: 'Fashion', delivery: '8–12 days' },
-  { name: 'boAt', domain: 'boat-lifestyle.com', category: 'Electronics', delivery: '6–10 days' },
-  { name: 'Nykaa Fashion', domain: 'nykaafashion.com', category: 'Fashion', delivery: '8–12 days' },
-  { name: 'BBlunt', domain: 'bblunt.com', category: 'Health & Beauty', delivery: '7–10 days' },
-  { name: 'The Derma Co', domain: 'thedermaco.com', category: 'Health & Beauty', delivery: '7–10 days' },
-  { name: "Dr. Sheth's", domain: 'drsheths.com', category: 'Health & Beauty', delivery: '7–10 days' },
-  { name: 'Aqualogica', domain: 'aqualogica.in', category: 'Health & Beauty', delivery: '7–10 days' },
-  { name: 'Staze 9To9', domain: 'staze9to9.com', category: 'Fashion', delivery: '8–12 days' },
-  { name: 'First Cry', domain: 'firstcry.com', category: 'Home & Kids', delivery: '9–14 days' },
-  { name: 'Bombae', domain: 'bombae.in', category: 'Health & Beauty', delivery: '7–10 days' },
-  { name: 'Ikea', domain: 'ikea.com', category: 'Home & Kids', delivery: '9–14 days' },
-]
-
 export const categories = ['All', 'Fashion', 'Health & Beauty', 'Electronics', 'Home & Kids'] as const
 
-export const currencies = ['USD', 'EUR', 'GBP', 'AED', 'CAD', 'AUD', 'SGD'] as const
+/** Most recent list fetched from the API. */
+let registry: Store[] = []
+
+export function setStoreRegistry(next: Store[]) {
+  registry = next
+}
+
+export function getStoreRegistry(): Store[] {
+  return registry
+}

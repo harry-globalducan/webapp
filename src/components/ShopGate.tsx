@@ -13,6 +13,8 @@ import { chromeExtension } from '../data/apps'
 export interface ShopTarget {
   name: string
   domain: string
+  /** Logo URL from the API, shown in the gate dialog. */
+  logo?: string
 }
 
 interface ShopGateContextValue {
@@ -107,7 +109,7 @@ export function ShopGateProvider({ children }: { children: ReactNode }) {
             <div className="flex items-start justify-between gap-3 border-b border-navy-900/5 px-6 py-5 dark:border-white/10">
               <div className="flex items-center gap-3">
                 <img
-                  src={`https://www.google.com/s2/favicons?domain=${store.domain}&sz=64`}
+                  src={store.logo}
                   alt=""
                   className="h-10 w-10 rounded-xl bg-cream-100 p-1.5 dark:bg-white/10"
                 />

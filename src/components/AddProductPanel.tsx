@@ -99,7 +99,7 @@ export default function AddProductPanel({ initialUrl = '' }: AddProductPanelProp
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <img
-                  src={store.logo ?? `https://www.google.com/s2/favicons?domain=${store.domain}&sz=32`}
+                  src={store.logo}
                   alt=""
                   className="h-4 w-4 rounded-sm"
                   loading="lazy"

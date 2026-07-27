@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Plane, Star, ArrowUpRight } from 'lucide-react'
 import { useHomeData } from '../context/HomeDataContext'
+import type { Store } from '../data/stores'
 import { useShopGate } from './ShopGate'
 import { useCurrency } from '../context/CurrencyContext'
-
-const favicon = (domain: string, size = 64) =>
-  `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`
 
 /** Sample live shipments — the floating badge cycles through these destinations. */
 const ROUTES = [
@@ -20,53 +18,49 @@ const ROUTES = [
 ]
 
 type Card =
-  | { kind: 'store'; domain: string; name: string; cat: string }
+  | { kind: 'store'; store: Store }
   | { kind: 'product'; emoji: string; name: string; priceUSD: number; to: string; tint: string }
 
-const COLUMN_A: Card[] = [
-  { kind: 'store', domain: 'amazon.in', name: 'Amazon', cat: 'Everything' },
+type ProductCard = Extract<Card, { kind: 'product' }>
+
+/** Illustrative products; store cards are interleaved from the live list. */
+const PRODUCTS_A: ProductCard[] = [
   { kind: 'product', emoji: '🥻', name: 'Banarasi Saree', priceUSD: 96, to: 'Dubai', tint: 'from-tangerine-100 to-tangerine-50 dark:from-tangerine-500/15 dark:to-transparent' },
-  { kind: 'store', domain: 'nykaa.com', name: 'Nykaa', cat: 'Beauty' },
   { kind: 'product', emoji: '🎧', name: 'boAt Airdopes', priceUSD: 28, to: 'Malé', tint: 'from-navy-100 to-navy-50 dark:from-navy-500/20 dark:to-transparent' },
-  { kind: 'store', domain: 'myntra.com', name: 'Myntra', cat: 'Fashion' },
 ]
 
-const COLUMN_B: Card[] = [
+const PRODUCTS_B: ProductCard[] = [
   { kind: 'product', emoji: '💄', name: 'Nykaa Beauty Box', priceUSD: 34, to: 'Victoria', tint: 'from-tangerine-100 to-tangerine-50 dark:from-tangerine-500/15 dark:to-transparent' },
-  { kind: 'store', domain: 'flipkart.com', name: 'Flipkart', cat: 'Electronics' },
   { kind: 'product', emoji: '⌚', name: 'Noise Smartwatch', priceUSD: 41, to: 'Thimphu', tint: 'from-leaf-100 to-leaf-50 dark:from-leaf-500/15 dark:to-transparent' },
-  { kind: 'store', domain: 'firstcry.com', name: 'FirstCry', cat: 'Kids' },
   { kind: 'product', emoji: '👗', name: 'Anarkali Set', priceUSD: 52, to: 'Port Louis', tint: 'from-navy-100 to-navy-50 dark:from-navy-500/20 dark:to-transparent' },
 ]
 
-function CardTile({
-  card,
-  onStore,
-  logoFor,
-}: {
-  card: Card
-  onStore: (d: string, n: string) => void
-  logoFor: (domain: string) => string | undefined
-}) {
+/** Interleave live stores with the product cards. */
+function buildColumn(stores: Store[], products: ProductCard[]): Card[] {
+  const out: Card[] = []
+  const max = Math.max(stores.length, products.length)
+  for (let i = 0; i < max; i += 1) {
+    if (stores[i]) out.push({ kind: 'store', store: stores[i] })
+    if (products[i]) out.push(products[i])
+  }
+  return out
+}
+
+function CardTile({ card, onStore }: { card: Card; onStore: (store: Store) => void }) {
   const { formatPrice } = useCurrency()
   if (card.kind === 'store') {
     return (
       <button
         type="button"
-        onClick={() => onStore(card.domain, card.name)}
+        onClick={() => onStore(card.store)}
         className="group flex w-full items-center gap-3 rounded-2xl border border-navy-900/8 bg-white p-3.5 text-left shadow-sm transition hover:border-tangerine-300 dark:border-white/10 dark:bg-white/5"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cream-50 dark:bg-white/10">
-          <img
-            src={logoFor(card.domain) ?? favicon(card.domain)}
-            alt=""
-            className="h-6 w-6 rounded object-contain"
-            loading="lazy"
-          />
+          <img src={card.store.logo} alt="" className="h-6 w-6 rounded object-contain" loading="lazy" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-bold text-navy-900 dark:text-white">{card.name}</span>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">{card.cat}</span>
+          <span className="block truncate text-sm font-bold text-navy-900 dark:text-white">{card.store.name}</span>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">{card.store.category}</span>
         </span>
         <ArrowUpRight className="h-4 w-4 shrink-0 text-navy-300 transition group-hover:text-tangerine-500" />
       </button>
@@ -90,19 +84,17 @@ function Column({
   cards,
   dir,
   onStore,
-  logoFor,
 }: {
   cards: Card[]
   dir: 'up' | 'down'
-  onStore: (d: string, n: string) => void
-  logoFor: (domain: string) => string | undefined
+  onStore: (store: Store) => void
 }) {
   const loop = [...cards, ...cards]
   return (
     <div className="flex-1">
       <div className={`flex flex-col gap-3 ${dir === 'up' ? 'animate-marquee-up' : 'animate-marquee-down'}`}>
         {loop.map((card, i) => (
-          <CardTile key={i} card={card} onStore={onStore} logoFor={logoFor} />
+          <CardTile key={i} card={card} onStore={onStore} />
         ))}
       </div>
     </div>
@@ -115,8 +107,9 @@ export default function HeroBento() {
   const { stores } = useHomeData()
   const [routeIdx, setRouteIdx] = useState(0)
 
-  // Use the live store logos so the hero never shows bundled placeholders.
-  const logoFor = (domain: string) => stores.find((s) => s.domain === domain)?.logo
+  // Store cards come straight from the API, split across the two columns.
+  const columnA = buildColumn(stores.filter((_, i) => i % 2 === 0).slice(0, 3), PRODUCTS_A)
+  const columnB = buildColumn(stores.filter((_, i) => i % 2 === 1).slice(0, 3), PRODUCTS_B)
 
   useEffect(() => {
     const id = window.setInterval(() => setRouteIdx((i) => (i + 1) % ROUTES.length), 2600)
@@ -124,10 +117,8 @@ export default function HeroBento() {
   }, [])
 
   const route = ROUTES[routeIdx]
-  const onStore = (domain: string, name: string) => {
-    const s = stores.find((x) => x.domain === domain)
-    requestShop(s ? { name: s.name, domain: s.domain } : { name, domain })
-  }
+  const onStore = (store: Store) =>
+    requestShop({ name: store.name, domain: store.domain, logo: store.logo })
 
   return (
     <div className="relative mx-auto w-full max-w-lg">
@@ -135,8 +126,8 @@ export default function HeroBento() {
 
       {/* scrolling columns, faded at top & bottom */}
       <div className="flex h-[440px] gap-3 overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_12%,black_88%,transparent)] sm:h-[500px]">
-        <Column cards={COLUMN_A} dir="up" onStore={onStore} logoFor={logoFor} />
-        <Column cards={COLUMN_B} dir="down" onStore={onStore} logoFor={logoFor} />
+        <Column cards={columnA} dir="up" onStore={onStore} />
+        <Column cards={columnB} dir="down" onStore={onStore} />
       </div>
 
       {/* Floating shipment badge — cycles through live destinations */}

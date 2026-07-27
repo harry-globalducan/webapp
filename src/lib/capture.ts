@@ -1,4 +1,4 @@
-import { stores, type Store } from '../data/stores'
+import { getStoreRegistry, type Store } from '../data/stores'
 import * as api from './api'
 
 export interface ProductVariant {
@@ -67,12 +67,28 @@ export function formatMoney(currency: string, amount: number): string {
 
 /** Match a pasted URL against the supported-store list. */
 export function detectStore(raw: string): Store | null {
+  const url = raw.trim()
   let host: string
   try {
-    host = new URL(raw.trim()).hostname.toLowerCase()
+    host = new URL(url).hostname.toLowerCase()
   } catch {
     return null
   }
+
+  const stores = getStoreRegistry()
+
+  // Prefer the store's own product patterns, which the API supplies.
+  const byPattern = stores.find((s) =>
+    (s.productRegex ?? []).some((pattern) => {
+      try {
+        return new RegExp(pattern).test(url)
+      } catch {
+        return false
+      }
+    }),
+  )
+  if (byPattern) return byPattern
+
   return (
     stores.find((s) => {
       const domain = s.domain.toLowerCase()

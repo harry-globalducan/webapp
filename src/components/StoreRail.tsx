@@ -33,12 +33,12 @@ export default function StoreRail() {
             <button
               key={store.domain}
               type="button"
-              onClick={() => requestShop({ name: store.name, domain: store.domain })}
+              onClick={() => requestShop({ name: store.name, domain: store.domain, logo: store.logo })}
               className="group flex w-[74px] shrink-0 flex-col items-center gap-1.5"
             >
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-navy-900/8 bg-white shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-tangerine-300 group-hover:shadow-md dark:border-white/10 dark:bg-white/5">
                 <img
-                  src={store.logo ?? `https://www.google.com/s2/favicons?domain=${store.domain}&sz=64`}
+                  src={store.logo}
                   alt=""
                   className="h-6 w-6 rounded object-contain"
                   loading="lazy"
@@ -96,7 +96,7 @@ export default function StoreRail() {
               resetSkip()
               const amazon = stores.find((s) => s.domain === 'amazon.in') ?? stores[0]
               if (!amazon) return
-              requestShop({ name: amazon.name, domain: amazon.domain })
+              requestShop({ name: amazon.name, domain: amazon.domain, logo: amazon.logo })
             }}
             className="ms-auto flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 font-semibold text-navy-600 transition hover:bg-navy-900/5 dark:text-navy-300 dark:hover:bg-white/10"
           >

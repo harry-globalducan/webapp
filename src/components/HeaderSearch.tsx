@@ -2,10 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, ChevronDown, Link2, Sparkles } from 'lucide-react'
 import { looksLikeUrl, normalizeProductUrl } from '../lib/search'
-import { stores } from '../data/stores'
+import { useHomeData } from '../context/HomeDataContext'
 import { useShopGate } from './ShopGate'
-
-const SCOPES = ['All stores', 'Amazon', 'Myntra', 'Nykaa', 'Flipkart'] as const
 
 /**
  * Doorzo-style command search band.
@@ -18,6 +16,10 @@ export default function HeaderSearch({ className = '' }: { className?: string })
   const scopeRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const { requestShop } = useShopGate()
+  const { stores } = useHomeData()
+
+  // Scope options come from the live store list — nothing hardcoded.
+  const scopes = ['All stores', ...stores.slice(0, 8).map((s) => s.name)]
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -38,7 +40,7 @@ export default function HeaderSearch({ className = '' }: { className?: string })
     const target =
       scope !== 'All stores'
         ? stores.find((s) => s.name === scope)
-        : stores.find((s) => s.domain === 'amazon.in')
+        : stores[0]
     if (target) {
       requestShop({ name: target.name, domain: target.domain })
       return
@@ -64,7 +66,7 @@ export default function HeaderSearch({ className = '' }: { className?: string })
         </button>
         {scopeOpen && (
           <div className="absolute start-0 top-full z-[60] mt-2 w-44 overflow-hidden rounded-2xl border border-navy-900/10 bg-white py-1 shadow-xl dark:border-white/10 dark:bg-black">
-            {SCOPES.map((s) => (
+            {scopes.map((s) => (
               <button
                 key={s}
                 type="button"

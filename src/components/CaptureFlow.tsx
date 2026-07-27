@@ -227,7 +227,7 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
               }`}
             >
               <img
-                src={`https://www.google.com/s2/favicons?domain=${detected.domain}&sz=32`}
+                src={detected.logo}
                 alt=""
                 className="h-3.5 w-3.5 rounded-sm"
               />
@@ -337,7 +337,7 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <img
-                  src={`https://www.google.com/s2/favicons?domain=${product.store.domain}&sz=32`}
+                  src={product.store.logo}
                   alt=""
                   className="h-4 w-4 rounded"
                 />
