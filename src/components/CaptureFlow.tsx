@@ -23,6 +23,8 @@ import {
   type ResolvedProduct,
 } from '../lib/capture'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
+import { useHomeData } from '../context/HomeDataContext'
 import { useWishlist } from '../context/WishlistContext'
 import CountUp from './CountUp'
 import type { Store } from '../data/stores'
@@ -56,13 +58,21 @@ export default function CaptureFlow({
   const [wishSaved, setWishSaved] = useState(false)
   const [pasteHint, setPasteHint] = useState('')
   const [detected, setDetected] = useState<Store | null>(null)
+  const { isAuthed } = useAuth()
+  const { stores: liveStores } = useHomeData()
 
   const resolve = useCallback(async (target: string) => {
     if (!target.trim()) return
+    if (!isAuthed) {
+      setError('Please sign in first — we fetch product details against your account.')
+      setPhase('error')
+      return
+    }
     setPhase('resolving')
     setError('')
     try {
-      const p = await resolveProduct(target.trim())
+      const storeApiId = liveStores.find((st) => st.domain === detectStore(target)?.domain)?.apiId
+      const p = await resolveProduct(target.trim(), storeApiId)
       setProduct(p)
       setChosen(Object.fromEntries(p.variants.map((v) => [v.label, v.options[0]])))
       setQty(1)
@@ -75,7 +85,7 @@ export default function CaptureFlow({
     }
     // hasWish is stable enough for post-resolve UI; omit from deps to avoid remount loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [isAuthed, liveStores])
 
   useEffect(() => {
     if (initialUrl) {
@@ -276,8 +286,17 @@ export default function CaptureFlow({
       {(phase === 'resolved' || phase === 'added') && product && cost && (
         <div className="mt-5 animate-card-in overflow-hidden rounded-3xl border border-navy-900/8 bg-white text-left shadow-xl shadow-navy-900/10 dark:border-white/10 dark:bg-black">
           <div className="flex flex-col gap-5 p-6 sm:flex-row">
-            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-zinc-50 text-5xl dark:bg-white/5">
-              {product.emoji}
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-zinc-50 text-5xl dark:bg-white/5">
+              {product.imageUrl ? (
+                <img
+                  src={product.imageUrl}
+                  alt={product.title}
+                  className="h-full w-full object-contain"
+                  loading="lazy"
+                />
+              ) : (
+                product.emoji
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
