@@ -1,8 +1,13 @@
 import { useState } from 'react'
 import { Copy, Check, Users, Gift, Clock3, Share2, Mail } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
+import { useAuth } from '../context/AuthContext'
+import { useApiData } from '../lib/useApiData'
+import * as api from '../lib/api'
 
-const REFERRAL_LINK = 'https://my.globalducan.com/r/NATASHA20'
+/** Mobile app builds referral links as `${WEB_URL}/register?referralCode=CODE`. */
+const WEB_URL = import.meta.env.VITE_WEB_URL ?? window.location.origin
+const FALLBACK_CODE = 'GLOBALDUCAN'
 
 const stats = [
   { icon: Users, label: 'Friends joined', value: '0' },
@@ -18,6 +23,15 @@ const steps = [
 
 export default function Refer() {
   const [copied, setCopied] = useState(false)
+  const { isAuthed } = useAuth()
+
+  // GET /api/v1/referral returns the signed-in user's real code.
+  const { data: referral } = useApiData(() => api.getReferral(), {
+    enabled: isAuthed,
+    fallback: { referralCode: FALLBACK_CODE },
+  })
+
+  const REFERRAL_LINK = `${WEB_URL}/register?referralCode=${referral.referralCode}`
 
   const copy = async () => {
     try {

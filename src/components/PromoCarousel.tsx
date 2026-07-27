@@ -234,7 +234,31 @@ function BeautySlide({ banner }: { banner: PromoBanner }) {
   )
 }
 
+/** Full-bleed artwork slide, used for image banners from /api/v1/home/banners. */
+function ImageSlide({ banner }: { banner: PromoBanner }) {
+  const img = (
+    <img
+      src={banner.imageUrl}
+      alt={banner.title}
+      loading="lazy"
+      className="h-full w-full object-cover"
+    />
+  )
+  return (
+    <div className="relative h-full min-h-[220px] w-full overflow-hidden rounded-3xl bg-cream-100 dark:bg-white/5">
+      {banner.to ? (
+        <Link to={banner.to} aria-label={banner.title} className="block h-full w-full">
+          {img}
+        </Link>
+      ) : (
+        img
+      )}
+    </div>
+  )
+}
+
 function Slide({ banner }: { banner: PromoBanner }) {
+  if (banner.visual === 'image' && banner.imageUrl) return <ImageSlide banner={banner} />
   if (banner.visual === 'beauty') return <BeautySlide banner={banner} />
   return <DefaultSlide banner={banner} />
 }

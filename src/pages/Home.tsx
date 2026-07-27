@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Package,
   TicketPercent,
@@ -19,7 +19,7 @@ import {
 import { Link } from 'react-router-dom'
 import { categories } from '../data/stores'
 import { useHomeData } from '../context/HomeDataContext'
-import { bannersFor } from '../data/banners'
+import { bannersFor, type PromoBanner } from '../data/banners'
 import StoreCard, { FeaturedStoreCard } from '../components/StoreCard'
 import AddProductPanel from '../components/AddProductPanel'
 import Reveal from '../components/Reveal'
@@ -132,7 +132,30 @@ function ShippedTicker() {
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>('All')
-  const { stores } = useHomeData()
+  const { stores, banners: apiBanners } = useHomeData()
+
+  // Live image banners from /api/v1/home/banners lead the carousel; the
+  // designed local slides follow (and are the fallback when the API is down).
+  const carouselBanners = useMemo(
+    () => [
+      ...apiBanners
+        .filter((b) => b.imageUrl)
+        .map<PromoBanner>((b) => ({
+          id: `api-${b.id}`,
+          eyebrow: '',
+          title: b.title ?? 'Global Ducan',
+          subtitle: '',
+          ctaLabel: '',
+          to: '',
+          tone: 'navy',
+          placement: 'home',
+          visual: 'image',
+          imageUrl: b.imageUrl,
+        })),
+      ...homeBanners,
+    ],
+    [apiBanners],
+  )
 
   const featured = stores.filter((s) => s.preferred)
   const visibleStores = (
@@ -212,7 +235,7 @@ export default function Home() {
       {/* Promo offers carousel */}
       <section className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
         <Reveal>
-          <PromoCarousel banners={homeBanners} />
+          <PromoCarousel banners={carouselBanners} />
         </Reveal>
       </section>
 

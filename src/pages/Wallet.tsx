@@ -16,13 +16,17 @@ import {
 
 import AccountLayout from '../components/AccountLayout'
 import DepositFlowGraphic from '../components/DepositFlowGraphic'
+import { useAuth } from '../context/AuthContext'
+import { useCurrency } from '../context/CurrencyContext'
+import { useApiData } from '../lib/useApiData'
+import * as api from '../lib/api'
 
 const DEPOSIT_SECTION_ID = 'how-bank-deposits'
 
-const statTiles = [
-  { icon: TrendingUp, label: 'Spent this month', value: '$0.00' },
-  { icon: Clock3, label: 'Pending deposits', value: '$0.00' },
-  { icon: Undo2, label: 'Refunds in progress', value: '$0.00' },
+const buildStatTiles = (fmt: (n: number) => string, spent: number, pending: number, refunds: number) => [
+  { icon: TrendingUp, label: 'Spent to date', value: fmt(spent) },
+  { icon: Clock3, label: 'Pending deposits', value: fmt(pending) },
+  { icon: Undo2, label: 'Refunds in progress', value: fmt(refunds) },
 ]
 
 const fundRows = [
@@ -74,6 +78,32 @@ function RowList({
 }
 
 export default function Wallet() {
+  const { isAuthed } = useAuth()
+  const { format } = useCurrency()
+
+  // GET /api/v1/wallet — real balance for signed-in users.
+  const { data: wallet } = useApiData(() => api.getWallet(), {
+    enabled: isAuthed,
+    fallback: { balance: 0, currency: 'USD' } as api.WalletBalance,
+  })
+  // GET /api/v1/wallet/transactions
+  const { data: transactions } = useApiData(() => api.getWalletTransactions(), {
+    enabled: isAuthed,
+    fallback: [] as api.WalletTransaction[],
+  })
+
+  const balanceLabel = format(Number(wallet.balance ?? 0), wallet.currency || 'USD')
+  const cur = wallet.currency || 'USD'
+  const sumBy = (pred: (t: api.WalletTransaction) => boolean) =>
+    transactions.filter(pred).reduce((sum, t) => sum + Number(t.amount ?? 0), 0)
+
+  const statTiles = buildStatTiles(
+    (n) => format(n, cur),
+    sumBy((t) => t.type === 'DEBIT' && t.category === 'ORDER'),
+    sumBy((t) => t.category === 'DEPOSIT' && t.type === 'CREDIT'),
+    sumBy((t) => t.category === 'REFUND'),
+  )
+
   return (
     <AccountLayout
       title="Your wallet"
@@ -96,13 +126,13 @@ export default function Wallet() {
               <WalletIcon className="h-4 w-4 text-navy-500" /> Available balance
             </div>
             <div className="mt-3 font-display text-5xl font-bold tabular-nums text-navy-900 dark:text-white">
-              $0<span className="text-2xl text-slate-300 dark:text-white/30">.00</span>
+              {balanceLabel}
             </div>
             <div className="mt-6 flex max-w-md gap-8">
               <div>
                 <div className="text-xs text-slate-400">Total balance</div>
                 <div className="mt-0.5 font-display text-lg font-bold tabular-nums text-navy-900 dark:text-white">
-                  $0.00
+                  {balanceLabel}
                 </div>
               </div>
               <div className="border-l border-navy-900/10 pl-8 dark:border-white/10">

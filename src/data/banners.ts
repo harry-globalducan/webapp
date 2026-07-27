@@ -1,6 +1,6 @@
 export type BannerTone = 'navy' | 'tangerine' | 'leaf'
 export type BannerPlacement = 'home' | 'home-stores' | 'coupons' | 'cart'
-export type BannerVisual = 'default' | 'beauty'
+export type BannerVisual = 'default' | 'beauty' | 'image'
 
 export interface PromoBanner {
   id: string
@@ -14,6 +14,8 @@ export interface PromoBanner {
   placement: BannerPlacement
   /** Optional richer artwork treatment for the slide. Defaults to 'default'. */
   visual?: BannerVisual
+  /** Full-bleed artwork URL, used when `visual` is 'image' (API banners). */
+  imageUrl?: string
   /** Partner brands surfaced as an elegant inline row (used by richer visuals). */
   accentStores?: string[]
 }

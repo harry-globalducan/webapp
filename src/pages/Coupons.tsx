@@ -1,8 +1,13 @@
-import { useState } from 'react'
-import { Copy, Check, Clock3, Store } from 'lucide-react'
+import { useMemo, useState, type FormEvent } from 'react'
+import { Copy, Check, Clock3, Store, Plus, Loader2, AlertCircle } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
 import PromoStrip from '../components/PromoStrip'
 import { bannersFor } from '../data/banners'
+import { useAuth } from '../context/AuthContext'
+import { useApiData } from '../lib/useApiData'
+import { useCurrency } from '../context/CurrencyContext'
+import * as api from '../lib/api'
+import { ApiError } from '../lib/api'
 
 const couponsBanner = bannersFor('coupons')[0]
 
@@ -17,7 +22,7 @@ interface Coupon {
   state: CouponState
 }
 
-const coupons: Coupon[] = [
+const demoCoupons: Coupon[] = [
   {
     code: 'WELCOME15',
     headline: '15% off your first order',
@@ -62,9 +67,74 @@ const coupons: Coupon[] = [
 
 const tabs: CouponState[] = ['Available', 'Used', 'Expired']
 
+/** Map a server coupon (GET /api/v1/discount-coupons) into the card shape. */
+function fromApi(c: api.ApiCoupon, fmt: (n: number) => string): Coupon {
+  const expired = c.expiry ? new Date(c.expiry).getTime() < Date.now() : false
+  const usedUp = (c.usedTimes ?? 0) >= (c.allowedUsage ?? Infinity)
+  const value =
+    c.type === 'PERCENTAGE' ? `${c.value}% off` : `${fmt(Number(c.value ?? 0))} off`
+  const detail = [
+    c.minimumOrderValue ? `On orders above ${fmt(Number(c.minimumOrderValue))}.` : null,
+    c.maxDiscountAmount ? `Up to ${fmt(Number(c.maxDiscountAmount))} off.` : null,
+    c.allowedUsage ? `Usage: ${c.usedTimes ?? 0} of ${c.allowedUsage}.` : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const when = c.expiry
+    ? new Date(c.expiry).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : ''
+
+  return {
+    code: c.code,
+    headline: value,
+    detail: detail || 'Applies at checkout.',
+    scope: c.applicableCountries?.length ? c.applicableCountries.join(', ') : 'All stores',
+    expires: when ? `${expired ? 'Expired' : 'Expires'} ${when}` : 'No expiry',
+    state: expired ? 'Expired' : usedUp ? 'Used' : 'Available',
+  }
+}
+
 export default function Coupons() {
   const [tab, setTab] = useState<CouponState>('Available')
   const [copied, setCopied] = useState('')
+  const [newCode, setNewCode] = useState('')
+  const [adding, setAdding] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
+  const { isAuthed } = useAuth()
+  const { formatPrice } = useCurrency()
+
+  const { data: apiCoupons, live, refresh } = useApiData(() => api.getCoupons(), {
+    enabled: isAuthed,
+    fallback: [] as api.ApiCoupon[],
+  })
+
+  // Signed-in users see their real coupons; guests see the sample set.
+  const coupons = useMemo(
+    () => (live ? apiCoupons.map((c) => fromApi(c, formatPrice)) : demoCoupons),
+    [live, apiCoupons, formatPrice],
+  )
+
+  const addCoupon = async (e: FormEvent) => {
+    e.preventDefault()
+    const code = newCode.trim()
+    if (!code) return
+    setAdding(true)
+    setAddError(null)
+    try {
+      const res = await api.assignCoupon(code)
+      if (!res) {
+        setAddError('That code is not valid for your account.')
+        return
+      }
+      setNewCode('')
+      refresh()
+    } catch (err) {
+      setAddError(err instanceof ApiError ? err.message : 'Could not add that coupon.')
+    } finally {
+      setAdding(false)
+    }
+  }
 
   const copy = async (code: string) => {
     try {
@@ -88,6 +158,34 @@ export default function Coupons() {
           <PromoStrip banner={couponsBanner} />
         </div>
       )}
+      {/* Redeem a code — POST /api/v1/discount-coupons/assign */}
+      {isAuthed && (
+        <form onSubmit={addCoupon} className="mb-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              value={newCode}
+              onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+              placeholder="Enter a coupon code"
+              aria-label="Coupon code"
+              className="min-w-0 flex-1 rounded-2xl border border-navy-900/10 bg-white px-4 py-3 text-sm uppercase tracking-wide shadow-sm outline-none transition focus:border-navy-400 dark:border-white/10 dark:bg-black dark:text-white"
+            />
+            <button
+              type="submit"
+              disabled={adding || !newCode.trim()}
+              className="flex items-center gap-2 rounded-2xl bg-navy-800 px-5 py-3 text-sm font-semibold text-white transition hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-tangerine-500 dark:hover:bg-tangerine-400"
+            >
+              {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Add coupon
+            </button>
+          </div>
+          {addError && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400">
+              <AlertCircle className="h-3.5 w-3.5" /> {addError}
+            </p>
+          )}
+        </form>
+      )}
+
       <div className="flex gap-1 border-b border-navy-900/10 dark:border-white/10">
         {tabs.map((t) => (
           <button
