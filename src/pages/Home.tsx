@@ -19,18 +19,15 @@ import {
 import { Link } from 'react-router-dom'
 import { categories } from '../data/stores'
 import { useHomeData } from '../context/HomeDataContext'
-import { bannersFor, type PromoBanner } from '../data/banners'
+import type { PromoBanner } from '../data/banners'
 import StoreCard, { FeaturedStoreCard } from '../components/StoreCard'
 import AddProductPanel from '../components/AddProductPanel'
 import Reveal from '../components/Reveal'
 import SectionHeading from '../components/SectionHeading'
 import PromoCarousel from '../components/PromoCarousel'
-import PromoStrip from '../components/PromoStrip'
 import AppDownload from '../components/AppDownload'
 import HeroBento from '../components/HeroBento'
 
-const homeBanners = bannersFor('home')
-const storesBanner = bannersFor('home-stores')[0]
 
 const quickActions = [
   { icon: Package, label: 'Orders', to: '/orders', tint: 'bg-navy-100 text-navy-600 dark:bg-navy-500/20 dark:text-navy-200' },
@@ -134,11 +131,10 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>('All')
   const { stores, banners: apiBanners } = useHomeData()
 
-  // Live image banners from /api/v1/home/banners lead the carousel; the
-  // designed local slides follow (and are the fallback when the API is down).
+  // Only banners from GET /api/v1/home/banners are shown — no local placeholders.
   const carouselBanners = useMemo(
-    () => [
-      ...apiBanners
+    () =>
+      apiBanners
         .filter((b) => b.imageUrl)
         .map<PromoBanner>((b) => ({
           id: `api-${b.id}`,
@@ -152,8 +148,6 @@ export default function Home() {
           visual: 'image',
           imageUrl: b.imageUrl,
         })),
-      ...homeBanners,
-    ],
     [apiBanners],
   )
 
@@ -233,11 +227,13 @@ export default function Home() {
       <AppDownload />
 
       {/* Promo offers carousel */}
-      <section className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
-        <Reveal>
-          <PromoCarousel banners={carouselBanners} />
-        </Reveal>
-      </section>
+      {carouselBanners.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
+          <Reveal>
+            <PromoCarousel banners={carouselBanners} />
+          </Reveal>
+        </section>
+      )}
 
       {/* White band: quick actions + how it works */}
       <section className="bg-white dark:bg-black">
@@ -299,13 +295,6 @@ export default function Home() {
 
       {/* Stores */}
       <section id="stores" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-20 sm:px-6">
-        {storesBanner && (
-          <Reveal>
-            <div className="mb-8">
-              <PromoStrip banner={storesBanner} />
-            </div>
-          </Reveal>
-        )}
         <Reveal>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>

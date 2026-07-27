@@ -1,16 +1,12 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Copy, Check, Clock3, Store, Plus, Loader2, AlertCircle } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
-import PromoStrip from '../components/PromoStrip'
-import { bannersFor } from '../data/banners'
 import { useAuth } from '../context/AuthContext'
 import { useApiData } from '../lib/useApiData'
 import ApiErrorNotice from '../components/ApiErrorNotice'
 import { useCurrency } from '../context/CurrencyContext'
 import * as api from '../lib/api'
 import { ApiError } from '../lib/api'
-
-const couponsBanner = bannersFor('coupons')[0]
 
 type CouponState = 'Available' | 'Used' | 'Expired'
 
@@ -112,11 +108,6 @@ export default function Coupons() {
       title="Coupons & offers"
       description="Codes apply at checkout, on top of store discounts."
     >
-      {couponsBanner && (
-        <div className="mb-6">
-          <PromoStrip banner={couponsBanner} />
-        </div>
-      )}
       <ApiErrorNotice
         message={error}
         onRetry={refresh}

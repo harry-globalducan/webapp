@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Puzzle, TicketPercent, PackageCheck, X, ArrowRight, Megaphone } from 'lucide-react'
+import { Puzzle, X, ArrowRight, Megaphone } from 'lucide-react'
 import { useHomeData } from '../context/HomeDataContext'
 
 type Promo = {
@@ -12,51 +12,21 @@ type Promo = {
   to: string
 }
 
-/** Rotating enterprise promo strip — Doorzo-style bold top ticker. */
-const PROMOS: Promo[] = [
-  {
-    icon: Puzzle,
-    tag: 'New',
-    text: 'Shop any Indian store, then Buy with Ducan —',
-    strong: 'our Chrome extension is here.',
-    cta: 'Get the extension',
-    to: '/ways-to-shop',
-  },
-  {
-    icon: TicketPercent,
-    tag: 'Deal',
-    text: 'New here? Grab',
-    strong: '15% off your first order + free consolidation.',
-    cta: 'Claim coupon',
-    to: '/coupons',
-  },
-  {
-    icon: PackageCheck,
-    tag: 'Ship',
-    text: 'One warehouse, one box, one tracking number —',
-    strong: 'ship 120k+ parcels worldwide from India.',
-    cta: 'See how it works',
-    to: '/ways-to-shop',
-  },
-]
 
 export default function NoticeBar() {
   const [idx, setIdx] = useState(0)
   const [dismissed, setDismissed] = useState(false)
   const { serviceBanners } = useHomeData()
 
-  // Live service banners from /api/v1/home/service-banners take priority; the
-  // built-in promos are the fallback when none are configured.
-  const items: Promo[] = serviceBanners.length
-    ? serviceBanners.map((text) => ({
-        icon: Megaphone,
-        tag: 'News',
-        text: '',
-        strong: text,
-        cta: 'Learn more',
-        to: '/guide',
-      }))
-    : PROMOS
+  // Only what the backend returns from /api/v1/home/service-banners.
+  const items: Promo[] = serviceBanners.map((text) => ({
+    icon: Megaphone,
+    tag: 'News',
+    text: '',
+    strong: text,
+    cta: 'Learn more',
+    to: '/guide',
+  }))
 
   useEffect(() => {
     if (dismissed || items.length < 2) return
@@ -103,7 +73,7 @@ export default function NoticeBar() {
         </Link>
 
         <div className="hidden items-center gap-1.5 sm:flex">
-          {PROMOS.map((_, i) => (
+          {items.map((_, i) => (
             <button
               key={i}
               type="button"

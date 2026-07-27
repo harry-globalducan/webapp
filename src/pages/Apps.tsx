@@ -155,22 +155,16 @@ function PhoneMock() {
       {/* ambient glow behind the device */}
       <div className="pointer-events-none absolute -inset-10 rounded-[4rem] bg-gradient-to-br from-tangerine-400/25 via-navy-400/20 to-transparent blur-3xl" />
 
-      {/* device frame */}
-      <div className="relative rounded-[2.9rem] border border-white/15 bg-navy-950/80 p-2.5 shadow-2xl shadow-navy-950/60 ring-1 ring-inset ring-white/10 backdrop-blur">
-        {/* Capped height so the device sits fully inside the hero; the screen
-            is anchored to the top and fades out at the bottom edge. */}
-        <div className="relative h-[380px] overflow-hidden rounded-[2.2rem] bg-white sm:h-[440px]">
-          <img
-            src="/app-screens/hero-orders-screen.webp"
-            alt="Global Ducan app showing My Orders with live shipment tracking"
-            width={776}
-            height={1200}
-            className="block h-full w-full object-cover object-top"
-            loading="eager"
-          />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
-        </div>
-      </div>
+      {/* Real device shot, masked to the handset outline so it sits directly
+          on the hero background — no synthetic frame required. */}
+      <img
+        src="/app-screens/hero-device.webp"
+        alt="Global Ducan app showing an order's live tracking timeline"
+        width={824}
+        height={1356}
+        className="relative block w-full drop-shadow-2xl"
+        loading="eager"
+      />
 
       {/* floating shipment chip */}
       <div className="absolute -left-6 bottom-16 hidden rounded-2xl border border-white/15 bg-white/95 px-3.5 py-2 shadow-xl shadow-navy-950/40 backdrop-blur sm:block">

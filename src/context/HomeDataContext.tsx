@@ -27,6 +27,7 @@ function domainFromUrl(url: string, fallback: string): string {
 
 function toStore(s: api.ApiStore): Store {
   return {
+    apiId: s.id,
     name: s.name,
     domain: domainFromUrl(s.url ?? '', s.name.toLowerCase().replace(/\s+/g, '') + '.com'),
     category: CATEGORY_MAP[s.category ?? ''] ?? 'Electronics',

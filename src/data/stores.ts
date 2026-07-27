@@ -1,6 +1,8 @@
 export type StoreCategory = 'Fashion' | 'Health & Beauty' | 'Electronics' | 'Home & Kids'
 
 export interface Store {
+  /** Server-side store id, required when adding items to the cart. */
+  apiId?: number
   name: string
   domain: string
   category: StoreCategory

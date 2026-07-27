@@ -5,11 +5,7 @@ import { useCart } from '../context/CartContext'
 import { useOrders } from '../context/OrdersContext'
 import { useWishlist } from '../context/WishlistContext'
 import CountUp from '../components/CountUp'
-import PromoStrip from '../components/PromoStrip'
-import { bannersFor } from '../data/banners'
 import { useCurrency } from '../context/CurrencyContext'
-
-const cartBanner = bannersFor('cart')[0]
 
 export default function Cart() {
   const { formatPrice } = useCurrency()
@@ -62,12 +58,6 @@ export default function Cart() {
         Pay the item fee now. International shipping is finalized after items arrive at our India
         warehouse.
       </p>
-
-      {cartBanner && (
-        <div className="mt-6">
-          <PromoStrip banner={cartBanner} />
-        </div>
-      )}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.7fr_1fr]">
         <div className="space-y-4">
