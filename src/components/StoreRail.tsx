@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { Store, TicketPercent, Sparkles, Grid2x2, Gift } from 'lucide-react'
-import { stores as staticStores } from '../data/stores'
 import { useHomeData } from '../context/HomeDataContext'
 import { useShopGate } from './ShopGate'
 
@@ -14,13 +13,22 @@ const CATEGORY_TAGS = [
 /** Doorzo-style store shortcut rail — colorful icon tiles + quick category tags. */
 export default function StoreRail() {
   const { requestShop, resetSkip } = useShopGate()
-  const { stores } = useHomeData()
+  const { stores, loading } = useHomeData()
 
   return (
     <div className="border-b border-navy-900/5 bg-white dark:border-white/5 dark:bg-black">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* icon tiles */}
         <div className="flex items-center gap-1 overflow-x-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {loading &&
+            stores.length === 0 &&
+            Array.from({ length: 10 }).map((_, i) => (
+              <div key={`sk-${i}`} className="flex w-[74px] shrink-0 flex-col items-center gap-1.5">
+                <div className="h-12 w-12 animate-pulse rounded-2xl bg-navy-900/5 dark:bg-white/10" />
+                <div className="h-2 w-12 animate-pulse rounded-full bg-navy-900/5 dark:bg-white/10" />
+              </div>
+            ))}
+
           {stores.slice(0, 12).map((store) => (
             <button
               key={store.domain}
@@ -86,7 +94,8 @@ export default function StoreRail() {
             type="button"
             onClick={() => {
               resetSkip()
-              const amazon = stores.find((s) => s.domain === 'amazon.in') ?? stores[0] ?? staticStores[0]
+              const amazon = stores.find((s) => s.domain === 'amazon.in') ?? stores[0]
+              if (!amazon) return
               requestShop({ name: amazon.name, domain: amazon.domain })
             }}
             className="ms-auto flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 font-semibold text-navy-600 transition hover:bg-navy-900/5 dark:text-navy-300 dark:hover:bg-white/10"

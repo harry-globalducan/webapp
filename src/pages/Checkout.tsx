@@ -22,6 +22,7 @@ import { useCurrency } from '../context/CurrencyContext'
 import * as api from '../lib/api'
 import { ApiError } from '../lib/api'
 import AddressForm from '../components/AddressForm'
+import { formatPhone } from '../lib/phone'
 
 type Step = 1 | 2 | 3
 const STEPS: { id: Step; label: string }[] = [
@@ -256,7 +257,7 @@ export default function Checkout() {
                       </span>
                     ))}
                     <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">
-                      {a.phone}
+                      {formatPhone(a.phone)}
                     </span>
                   </span>
                 </button>

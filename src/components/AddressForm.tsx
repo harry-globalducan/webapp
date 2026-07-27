@@ -1,7 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { AlertTriangle, Building2, Globe, Home, Loader2, Phone, User } from 'lucide-react'
+import {
+  AlertTriangle,
+  Building2,
+  ChevronDown,
+  Globe,
+  Home,
+  Loader2,
+  Phone,
+  User,
+} from 'lucide-react'
 import * as api from '../lib/api'
 import { ApiError } from '../lib/api'
+import { DIAL_CODES, dialFor, formatNational, isValidNational, toE164 } from '../lib/phone'
 
 interface AddressFormProps {
   onSaved: () => void
@@ -24,6 +34,7 @@ export default function AddressForm({ onSaved, onCancel }: AddressFormProps) {
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [zipCode, setZipCode] = useState('')
+  const [dial, setDial] = useState('+960')
   const [phone, setPhone] = useState('')
 
   // Countries we actually ship to, straight from the API.
@@ -34,11 +45,21 @@ export default function AddressForm({ onSaved, onCancel }: AddressFormProps) {
       .catch(() => setCountries([]))
   }, [])
 
+  // Default the dial code to whatever country the shopper picks.
+  useEffect(() => {
+    const match = dialFor(country)
+    if (match) setDial(match.dial)
+  }, [country])
+
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
     if (!fullName.trim() || !street1.trim() || !city.trim() || !country || !phone.trim()) {
       setError('Please fill in the recipient, country, street, city and phone number.')
+      return
+    }
+    if (!isValidNational(phone)) {
+      setError('Please enter a valid phone number.')
       return
     }
     setSaving(true)
@@ -51,7 +72,7 @@ export default function AddressForm({ onSaved, onCancel }: AddressFormProps) {
         state: state.trim() || undefined,
         country,
         zipCode: zipCode.trim() || undefined,
-        phone: phone.trim(),
+        phone: toE164(dial, phone),
       })
       onSaved()
     } catch (err) {
@@ -168,16 +189,34 @@ export default function AddressForm({ onSaved, onCancel }: AddressFormProps) {
           Contact
         </div>
 
-        <div className="relative">
-          <Phone className={icon} />
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="Phone number (with country code)"
-            aria-label="Phone number"
-            inputMode="tel"
-            className={field}
-          />
+        <div className="flex items-stretch gap-2">
+          <div className="relative shrink-0">
+            <select
+              value={dial}
+              onChange={(e) => setDial(e.target.value)}
+              aria-label="Country dialling code"
+              className="h-full appearance-none rounded-2xl border border-navy-900/10 bg-cream-50 py-3 pl-3 pr-8 text-sm font-semibold text-navy-900 outline-none transition focus:border-navy-400 dark:border-white/10 dark:bg-white/5 dark:text-white"
+            >
+              {DIAL_CODES.map((d) => (
+                <option key={`${d.code}-${d.dial}`} value={d.dial}>
+                  {d.flag} {d.dial}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-navy-400" />
+          </div>
+          <div className="relative min-w-0 flex-1">
+            <Phone className={icon} />
+            <input
+              value={formatNational(phone)}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Phone number"
+              aria-label="Phone number"
+              inputMode="tel"
+              autoComplete="tel-national"
+              className={field}
+            />
+          </div>
         </div>
       </div>
 

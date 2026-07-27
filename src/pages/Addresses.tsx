@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Plus, Home, MapPin, Phone, CheckCircle2 } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
 import { useAddresses } from '../context/AddressContext'
+import { formatPhone } from '../lib/phone'
 import { useAuth } from '../context/AuthContext'
 
 
@@ -73,7 +74,7 @@ export default function Addresses() {
                 </div>
               ))}
               <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-400">
-                <Phone className="h-3 w-3" /> {addr.phone}
+                <Phone className="h-3 w-3" /> {formatPhone(addr.phone)}
               </div>
             </div>
             <div className="flex gap-4 border-t border-navy-900/10 px-5 py-3 text-xs font-semibold dark:border-white/10">

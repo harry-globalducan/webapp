@@ -65,9 +65,13 @@ export class ApiError extends Error {
     this.status = status
     this.detail = detail
   }
-  /** 401/403 — the session is missing, expired or lacks permission. */
+  /** 401 — the session is missing or expired. */
   get isAuth() {
-    return this.status === 401 || this.status === 403
+    return this.status === 401
+  }
+  /** 403 — authenticated, but this action is not permitted. */
+  get isForbidden() {
+    return this.status === 403
   }
   /** No response at all (offline, DNS, CORS, mixed content). */
   get isNetwork() {
@@ -84,7 +88,7 @@ function messageForStatus(status: number, serverMessage?: string): string {
     case 401:
       return 'Your session has expired. Please sign in again.'
     case 403:
-      return 'You do not have permission to do that. Please sign in again.'
+      return serverMessage || 'You do not have permission to do that.'
     case 404:
       return 'We could not find what you were looking for.'
     case 408:
@@ -107,7 +111,13 @@ function messageForStatus(status: number, serverMessage?: string): string {
   }
 }
 
-/** Called on 401/403 so the app can clear a dead session. */
+/**
+ * Called on 401 so the app can clear a dead session.
+ *
+ * 403 is deliberately excluded: it means the request was understood but not
+ * allowed, which is not the same as a bad token, and signing the user out on
+ * one would throw away a perfectly good session.
+ */
 type AuthFailureHandler = () => void
 let onAuthFailure: AuthFailureHandler | null = null
 export function setAuthFailureHandler(fn: AuthFailureHandler | null) {
@@ -152,7 +162,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         ? (data.message ?? data.error ?? data.detail ?? undefined)
         : undefined
 
-    if (res.status === 401 || res.status === 403) onAuthFailure?.()
+    if (res.status === 401) onAuthFailure?.()
 
     throw new ApiError(
       messageForStatus(res.status, typeof serverMessage === 'string' ? serverMessage : undefined),

@@ -129,7 +129,7 @@ function ShippedTicker() {
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>('All')
-  const { stores, banners: apiBanners } = useHomeData()
+  const { stores, banners: apiBanners, loading: storesLoading } = useHomeData()
 
   // Only banners from GET /api/v1/home/banners are shown — no local placeholders.
   const carouselBanners = useMemo(
@@ -334,6 +334,14 @@ export default function Home() {
 
         <Reveal delay={120}>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {storesLoading &&
+              stores.length === 0 &&
+              Array.from({ length: 10 }).map((_, i) => (
+                <div
+                  key={`sk-${i}`}
+                  className="h-32 animate-pulse rounded-3xl border border-navy-900/5 bg-cream-50 dark:border-white/5 dark:bg-white/5"
+                />
+              ))}
             {visibleStores.map((store) => (
               <StoreCard key={store.name} store={store} />
             ))}

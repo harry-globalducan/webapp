@@ -41,9 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<StoredAuth | null>(load)
   const [sessionExpired, setSessionExpired] = useState(false)
 
-  // A 401/403 from any call means the stored token is dead — clear it so the
-  // UI drops back to the signed-out state instead of showing broken pages,
-  // and flag it so we can explain the sign-out rather than doing it silently.
+  // Only a 401 means the stored token is dead. Clear it so the UI drops back
+  // to the signed-out state, and flag it so we can explain the sign-out rather
+  // than doing it silently. A 403 is surfaced as an error and leaves the
+  // session intact.
   useEffect(() => {
     api.setAuthFailureHandler(() => {
       setAuth((prev) => {

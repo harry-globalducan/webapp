@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Link2, ScanSearch, ShoppingBag } from 'lucide-react'
 import CaptureFlow from './CaptureFlow'
-import { stores } from '../data/stores'
+import { useHomeData } from '../context/HomeDataContext'
 
 const steps = [
   { icon: Link2, label: 'Paste a product link' },
@@ -9,7 +9,6 @@ const steps = [
   { icon: ShoppingBag, label: 'Add to your Ducan cart' },
 ]
 
-const showcaseStores = stores.slice(0, 8)
 
 interface AddProductPanelProps {
   /** When a share/bookmarklet URL is already present */
@@ -17,6 +16,8 @@ interface AddProductPanelProps {
 }
 
 export default function AddProductPanel({ initialUrl = '' }: AddProductPanelProps) {
+  const { stores } = useHomeData()
+  const showcaseStores = stores.slice(0, 8)
   const hasLink = Boolean(initialUrl)
   const titleLead = hasLink ? 'Almost there —' : 'Add any product to your'
   const titleAccent = hasLink ? 'review & add to cart' : 'Ducan cart'
@@ -98,7 +99,7 @@ export default function AddProductPanel({ initialUrl = '' }: AddProductPanelProp
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <img
-                  src={`https://www.google.com/s2/favicons?domain=${store.domain}&sz=32`}
+                  src={store.logo ?? `https://www.google.com/s2/favicons?domain=${store.domain}&sz=32`}
                   alt=""
                   className="h-4 w-4 rounded-sm"
                   loading="lazy"

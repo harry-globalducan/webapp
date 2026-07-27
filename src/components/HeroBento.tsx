@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plane, Star, ArrowUpRight } from 'lucide-react'
-import { stores } from '../data/stores'
+import { useHomeData } from '../context/HomeDataContext'
 import { useShopGate } from './ShopGate'
 import { useCurrency } from '../context/CurrencyContext'
 
@@ -39,7 +39,15 @@ const COLUMN_B: Card[] = [
   { kind: 'product', emoji: '👗', name: 'Anarkali Set', priceUSD: 52, to: 'Port Louis', tint: 'from-navy-100 to-navy-50 dark:from-navy-500/20 dark:to-transparent' },
 ]
 
-function CardTile({ card, onStore }: { card: Card; onStore: (d: string, n: string) => void }) {
+function CardTile({
+  card,
+  onStore,
+  logoFor,
+}: {
+  card: Card
+  onStore: (d: string, n: string) => void
+  logoFor: (domain: string) => string | undefined
+}) {
   const { formatPrice } = useCurrency()
   if (card.kind === 'store') {
     return (
@@ -49,7 +57,12 @@ function CardTile({ card, onStore }: { card: Card; onStore: (d: string, n: strin
         className="group flex w-full items-center gap-3 rounded-2xl border border-navy-900/8 bg-white p-3.5 text-left shadow-sm transition hover:border-tangerine-300 dark:border-white/10 dark:bg-white/5"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cream-50 dark:bg-white/10">
-          <img src={favicon(card.domain)} alt="" className="h-6 w-6 rounded" loading="lazy" />
+          <img
+            src={logoFor(card.domain) ?? favicon(card.domain)}
+            alt=""
+            className="h-6 w-6 rounded object-contain"
+            loading="lazy"
+          />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-bold text-navy-900 dark:text-white">{card.name}</span>
@@ -73,13 +86,23 @@ function CardTile({ card, onStore }: { card: Card; onStore: (d: string, n: strin
   )
 }
 
-function Column({ cards, dir, onStore }: { cards: Card[]; dir: 'up' | 'down'; onStore: (d: string, n: string) => void }) {
+function Column({
+  cards,
+  dir,
+  onStore,
+  logoFor,
+}: {
+  cards: Card[]
+  dir: 'up' | 'down'
+  onStore: (d: string, n: string) => void
+  logoFor: (domain: string) => string | undefined
+}) {
   const loop = [...cards, ...cards]
   return (
     <div className="flex-1">
       <div className={`flex flex-col gap-3 ${dir === 'up' ? 'animate-marquee-up' : 'animate-marquee-down'}`}>
         {loop.map((card, i) => (
-          <CardTile key={i} card={card} onStore={onStore} />
+          <CardTile key={i} card={card} onStore={onStore} logoFor={logoFor} />
         ))}
       </div>
     </div>
@@ -89,7 +112,11 @@ function Column({ cards, dir, onStore }: { cards: Card[]; dir: 'up' | 'down'; on
 /** Auto-scrolling montage of brands & products — the homepage hero visual. */
 export default function HeroBento() {
   const { requestShop } = useShopGate()
+  const { stores } = useHomeData()
   const [routeIdx, setRouteIdx] = useState(0)
+
+  // Use the live store logos so the hero never shows bundled placeholders.
+  const logoFor = (domain: string) => stores.find((s) => s.domain === domain)?.logo
 
   useEffect(() => {
     const id = window.setInterval(() => setRouteIdx((i) => (i + 1) % ROUTES.length), 2600)
@@ -108,8 +135,8 @@ export default function HeroBento() {
 
       {/* scrolling columns, faded at top & bottom */}
       <div className="flex h-[440px] gap-3 overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_12%,black_88%,transparent)] sm:h-[500px]">
-        <Column cards={COLUMN_A} dir="up" onStore={onStore} />
-        <Column cards={COLUMN_B} dir="down" onStore={onStore} />
+        <Column cards={COLUMN_A} dir="up" onStore={onStore} logoFor={logoFor} />
+        <Column cards={COLUMN_B} dir="down" onStore={onStore} logoFor={logoFor} />
       </div>
 
       {/* Floating shipment badge — cycles through live destinations */}

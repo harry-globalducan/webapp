@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import * as api from '../lib/api'
-import { stores as staticStores, type Store, type StoreCategory } from '../data/stores'
+import { type Store, type StoreCategory } from '../data/stores'
 
 /**
  * Live catalog data from the PUBLIC /api/v1/home/** endpoints.
@@ -48,7 +48,8 @@ interface HomeDataValue {
 const HomeDataContext = createContext<HomeDataValue | null>(null)
 
 export function HomeDataProvider({ children }: { children: ReactNode }) {
-  const [stores, setStores] = useState<Store[]>(staticStores)
+  // Start empty so no bundled placeholder flashes before the API responds.
+  const [stores, setStores] = useState<Store[]>([])
   const [serviceBanners, setServiceBanners] = useState<string[]>([])
   const [banners, setBanners] = useState<api.ApiBanner[]>([])
   const [live, setLive] = useState(false)
@@ -65,12 +66,9 @@ export function HomeDataProvider({ children }: { children: ReactNode }) {
       ])
       if (cancelled) return
 
-      if (storeRes.status === 'fulfilled' && Array.isArray(storeRes.value) && storeRes.value.length) {
-        const mapped = storeRes.value.filter((s) => s.active !== false).map(toStore)
-        if (mapped.length) {
-          setStores(mapped)
-          setLive(true)
-        }
+      if (storeRes.status === 'fulfilled' && Array.isArray(storeRes.value)) {
+        setStores(storeRes.value.filter((s) => s.active !== false).map(toStore))
+        setLive(true)
       }
       if (bannerRes.status === 'fulfilled' && Array.isArray(bannerRes.value)) {
         setBanners(bannerRes.value.filter((b) => b.active))
@@ -98,7 +96,7 @@ export function useHomeData(): HomeDataValue {
   const ctx = useContext(HomeDataContext)
   // Safe default so components can render outside the provider (tests, etc.)
   if (!ctx) {
-    return { stores: staticStores, serviceBanners: [], banners: [], live: false, loading: false }
+    return { stores: [], serviceBanners: [], banners: [], live: false, loading: false }
   }
   return ctx
 }
