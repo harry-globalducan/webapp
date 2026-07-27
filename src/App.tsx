@@ -35,6 +35,7 @@ import UserGuide from './pages/UserGuide'
 import Shipping from './pages/Shipping'
 import Apps from './pages/Apps'
 import About from './pages/About'
+import Checkout from './pages/Checkout'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -51,6 +52,7 @@ function PageRoutes() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/cart" element={<RequireAuth><Cart /></RequireAuth>} />
+        <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
         <Route path="/wishlist" element={<RequireAuth><Wishlist /></RequireAuth>} />
         <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
         <Route path="/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />

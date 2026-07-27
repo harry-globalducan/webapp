@@ -31,7 +31,7 @@ interface CartContextValue {
   addQuantity: (cartItemId: string, qty: number) => Promise<void>
   remove: (id: string) => void
   setQty: (id: string, qty: number) => void
-  clear: () => void
+  clear: () => Promise<void>
   loading: boolean
   refresh: () => void
 }
@@ -126,10 +126,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     api.setCartItemCount(id, next).catch(() => refresh())
   }
 
-  const clear = () => {
+  const clear = async () => {
     const ids = items.map((it) => it.id)
     setItems([])
-    Promise.allSettled(ids.map((id) => api.removeCartItem(id))).then(() => refresh())
+    await Promise.allSettled(ids.map((id) => api.removeCartItem(id)))
+    refresh()
   }
 
   const count = items.reduce((sum, it) => sum + it.qty, 0)

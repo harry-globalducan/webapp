@@ -228,8 +228,9 @@ export default function Orders() {
       <div className="mt-8 flex items-center gap-4 rounded-2xl border border-dashed border-navy-900/15 bg-white/60 p-5 dark:border-white/15 dark:bg-white/5">
         <Package className="h-7 w-7 shrink-0 text-navy-300" />
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Proxy flow: pay the item fee first, we buy and hold at our India warehouse, then you choose
-          a shipping method and pay international postage — fewer fees, one tracking number.
+          How it works: you pay once at checkout — items plus shipping and handling. We buy from
+          the Indian stores, consolidate everything at our India warehouse, and deliver it to your
+          door under one tracking number.
         </p>
       </div>
     </AccountLayout>

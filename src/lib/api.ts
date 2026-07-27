@@ -381,6 +381,14 @@ export const setCartItemCount = (itemId: string, count: number) =>
 export const removeCartItem = (itemId: string) =>
   request<GeneralResponse>(`${API_ROOT}/orders/cart/${itemId}`, { method: 'DELETE' })
 
+/** A price that may carry a discount, as returned for gross/shipping figures. */
+export interface DiscountedPriceRef {
+  basePrice?: PriceRef
+  discounted?: boolean
+  discount?: PriceRef
+  discountedPrice?: PriceRef
+}
+
 export interface ApiOrder {
   id: string
   visualId?: string
@@ -388,9 +396,16 @@ export interface ApiOrder {
   status?: string
   items?: unknown[]
   priceCurrency?: string
+  grossPriceDetails?: DiscountedPriceRef
+  shippingFeeDetails?: DiscountedPriceRef
+  commissionFeeDetails?: DiscountedPriceRef
+  importTaxDetails?: PriceRef
   totalAmountDetails?: PriceRef
+  paymentOrderId?: string
+  payments?: unknown[]
   shippingCompany?: string
   shippingTrackingNumber?: string
+  /** Set when a supplied coupon could not be applied. */
   couponError?: string
 }
 
@@ -460,3 +475,49 @@ export const assignCoupon = (couponCode: string) =>
   )
 
 export const getReferral = () => request<{ referralCode: string }>(`${API_ROOT}/referral`)
+
+/* ------------------------------------------------------------------ *
+ * Payments — AUTH required (only /payments/hook/** is public).
+ * ------------------------------------------------------------------ */
+
+export type PaymentGateway =
+  | 'RAZORPAY'
+  | 'STRIPE'
+  | 'PAYPAL'
+  | 'WALLET'
+  | 'BHUTAN_POST'
+  | 'BHUTAN_NATIONAL_BANK'
+
+export interface PaymentConfig {
+  paymentGateway: PaymentGateway
+  displayName?: string
+  accountName?: string
+  deferredPayment?: boolean
+}
+
+export interface BankAccount {
+  country?: string
+  flag?: string
+  currency?: string
+  beneficiary?: string
+  bank?: string
+  account?: string
+  ifsc?: string
+  swift?: string
+}
+
+/** GET /api/v1/payments — gateways available for a country. */
+export const getPaymentConfigs = (country?: string) =>
+  request<PaymentConfig[]>(
+    `${API_ROOT}/payments${country ? `?country=${encodeURIComponent(country)}` : ''}`,
+  )
+
+export const getBankAccounts = () => request<BankAccount[]>(`${API_ROOT}/payments/banks`)
+
+/** POST /api/v1/orders/{id}/payments — start payment for an order. */
+export const initiateOrderPayment = (orderId: string, gateway: PaymentGateway, amount?: number) =>
+  request<ApiOrder>(
+    `${API_ROOT}/orders/${orderId}/payments?gateway=${gateway}` +
+      (amount != null ? `&amount=${amount}` : ''),
+    { method: 'POST' },
+  )
