@@ -15,12 +15,14 @@ import {
   LogIn,
 } from 'lucide-react'
 import { resolveProduct, landedCost, detectStore, type ResolvedProduct } from '../lib/capture'
+import { AnalyticsEvents, track } from '../lib/analytics'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useHomeData } from '../context/HomeDataContext'
 import { useCurrency } from '../context/CurrencyContext'
 import { useWishlist } from '../context/WishlistContext'
 import type { Store } from '../data/stores'
+import StoreLogo from './StoreLogo'
 
 type Phase = 'idle' | 'resolving' | 'resolved' | 'added' | 'error' | 'auth'
 
@@ -118,7 +120,7 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
   const [adding, setAdding] = useState(false)
   const { isAuthed } = useAuth()
   const { stores: liveStores } = useHomeData()
-  const { formatPrice } = useCurrency()
+  const { format } = useCurrency()
 
   // Read these through refs so `resolve` keeps a stable identity — otherwise the
   // auto-resolve effect below re-runs whenever the store list loads, re-fetching
@@ -142,6 +144,7 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
     }
     setPhase('resolving')
     setError('')
+    track(AnalyticsEvents.productCaptureStarted, { url: target.trim() })
     try {
       const storeApiId = storesRef.current.find(
         (st) => st.domain === detectStore(target)?.domain,
@@ -153,9 +156,18 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
       setWishSaved(hasWish(p.url) || hasWish(p.title))
       setDetected(p.store)
       setPhase('resolved')
+      track(AnalyticsEvents.productCaptured, {
+        store: p.store.name,
+        title: p.title,
+        price_inr: p.priceINR,
+      })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.')
       setPhase('error')
+      track(AnalyticsEvents.productCaptureFailed, {
+        url: target.trim(),
+        message: e instanceof Error ? e.message : 'unknown',
+      })
     }
     // hasWish is stable enough for post-resolve UI; omit from deps to avoid remount loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -208,6 +220,12 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
       // quantity that was there rather than creating a duplicate entry.
       await addQuantity(product.cartItemId, product.existingQty + qty)
       setPhase('added')
+      track(AnalyticsEvents.addedToCart, {
+        store: product.store.name,
+        title: product.title,
+        qty,
+        cart_item_id: product.cartItemId,
+      })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not add this to your cart.')
       setPhase('error')
@@ -221,7 +239,7 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
     const saved = toggleWish({
       title: product.title,
       store: product.store.name,
-      priceUSD: product.priceUSD,
+      priceUSD: product.price,
       emoji: product.emoji,
       imageUrl: product.imageUrl,
       url: product.url,
@@ -380,10 +398,11 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <img
+                <StoreLogo
                   src={product.store.logo}
-                  alt=""
-                  className="h-4 w-4 rounded"
+                  name={product.store.name}
+                  domain={product.store.domain}
+                  className="h-4 w-4 rounded object-contain"
                 />
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
                   {product.store.name}
@@ -394,7 +413,7 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
               </h3>
               <div className="mt-1.5 flex items-baseline gap-2">
                 <span className="font-display text-xl font-bold text-navy-900 dark:text-white">
-                  {formatPrice(product.priceUSD)}
+                  {format(product.price, product.currency)}
                 </span>
                 <span className="text-xs text-slate-400">
                   ₹{product.priceINR.toLocaleString('en-IN')} in store
@@ -465,25 +484,25 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
                   <div className="flex justify-between">
                     <dt className="text-slate-400">Item ×{qty}</dt>
                     <dd className="font-semibold text-navy-900 dark:text-white">
-                      {formatPrice(cost.item)}
+                      {format(cost.item, product.currency)}
                     </dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-slate-400">Proxy service fee</dt>
                     <dd className="font-semibold text-navy-900 dark:text-white">
-                      {formatPrice(cost.serviceFee)}
+                      {format(cost.serviceFee, product.currency)}
                     </dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-slate-400">Intl. shipping (est. by weight)</dt>
                     <dd className="font-semibold text-navy-900 dark:text-white">
-                      {formatPrice(cost.shipping)}
+                      {format(cost.shipping, product.currency)}
                     </dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-slate-400">Est. duties</dt>
                     <dd className="font-semibold text-navy-900 dark:text-white">
-                      {formatPrice(cost.duties)}
+                      {format(cost.duties, product.currency)}
                     </dd>
                   </div>
                 </dl>
@@ -497,7 +516,7 @@ export default function CaptureFlow({ initialUrl = '', variant = 'light' }: Capt
               <div>
                 <span className="text-xs text-slate-400">Estimated total</span>
                 <div className="font-display text-3xl font-bold text-navy-900 dark:text-white">
-                  <span>{formatPrice(cost.total)}</span>
+                  <span>{format(cost.total, product.currency)}</span>
                 </div>
               </div>
               {phase === 'added' ? (

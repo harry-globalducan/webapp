@@ -21,7 +21,7 @@ function isPriced(status?: string) {
 }
 
 export default function Cart() {
-  const { formatPrice } = useCurrency()
+  const { format } = useCurrency()
   const { items, remove, setQty, clear, loading } = useCart()
   const navigate = useNavigate()
   const [clearing, setClearing] = useState(false)
@@ -33,7 +33,9 @@ export default function Cart() {
     [items, deselected],
   )
   const selected = items.filter((it) => selectedIds.includes(it.id))
-  const subtotal = selected.reduce((sum, it) => sum + it.priceUSD * it.qty, 0)
+  // Sum using the server currency on each line (do not re-convert as USD).
+  const subtotalCurrency = selected[0]?.currency ?? 'USD'
+  const subtotal = selected.reduce((sum, it) => sum + it.price * it.qty, 0)
 
   const toggle = (id: string) =>
     setDeselected((prev) => {
@@ -164,7 +166,7 @@ export default function Cart() {
                     </div>
                   )}
                   <div className="mt-2 font-display text-lg font-bold text-navy-900 dark:text-white">
-                    {priced ? formatPrice(item.priceUSD) : '—'}
+                    {priced ? format(item.price, item.currency) : '—'}
                   </div>
 
                   {priced ? (
@@ -230,7 +232,7 @@ export default function Cart() {
           <div className="mt-5 flex items-baseline justify-between">
             <span className="text-sm text-slate-500 dark:text-slate-400">Subtotal</span>
             <span className="font-display text-2xl font-bold text-navy-900 dark:text-white">
-              {formatPrice(subtotal)}
+              {format(subtotal, subtotalCurrency)}
             </span>
           </div>
           <p className="mt-1 text-xs text-slate-400">

@@ -1,6 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import * as api from '../lib/api'
 import type { AuthUser, RegisterInput, LoginInput } from '../lib/api'
+import {
+  AnalyticsEvents,
+  identifyUser,
+  resetAnalyticsUser,
+  track,
+} from '../lib/analytics'
 
 interface AuthContextValue {
   /** True when a 401/403 forced a sign-out, so the UI can explain it. */
@@ -66,6 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [auth])
 
+  // Keep Amplitude user traits in sync whenever the session loads or changes.
+  useEffect(() => {
+    if (auth?.user) identifyUser(auth.user)
+  }, [auth?.user])
+
   /**
    * The signin/signup responses only carry a JWT, so fetch the real profile
    * from GET /users/me. Falls back to the seed user if that call fails.
@@ -92,6 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await api.register(input)
     const user = await hydrate(res.token, res.user)
     setAuth({ token: res.token, user })
+    identifyUser(user)
+    track(AnalyticsEvents.signedUp, {
+      method: 'email',
+      has_referral: Boolean(input.referralCode),
+    })
     return user
   }
 
@@ -99,12 +115,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await api.login(input)
     const user = await hydrate(res.token, res.user)
     setAuth({ token: res.token, user })
+    identifyUser(user)
+    track(AnalyticsEvents.signedIn, { method: 'email' })
     return user
   }
 
   const logout = () => {
+    track(AnalyticsEvents.signedOut)
     setAuth(null)
     setSessionExpired(false)
+    resetAnalyticsUser()
   }
 
   return (

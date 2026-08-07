@@ -21,8 +21,10 @@ import { useAddresses } from '../context/AddressContext'
 import { useCurrency } from '../context/CurrencyContext'
 import * as api from '../lib/api'
 import { ApiError } from '../lib/api'
+import { pickMoney } from '../lib/money'
 import AddressForm from '../components/AddressForm'
 import { formatPhone } from '../lib/phone'
+import { AnalyticsEvents, track } from '../lib/analytics'
 
 type Step = 1 | 2 | 3
 const STEPS: { id: Step; label: string }[] = [
@@ -36,13 +38,8 @@ const STEPS: { id: Step; label: string }[] = [
  * the currency it used — never re-convert or pair a figure with another code.
  */
 function money(p?: api.PriceRef): { amount: number; currency?: string } {
-  if (p?.priceInUserCurrency != null) {
-    return { amount: p.priceInUserCurrency, currency: p.userCurrency }
-  }
-  if (p?.priceInPaymentCurrency != null) {
-    return { amount: p.priceInPaymentCurrency, currency: p.paymentCurrency }
-  }
-  return { amount: p?.priceInBaseCurrency ?? 0, currency: p?.baseCurrency }
+  const m = pickMoney(p)
+  return { amount: m.amount, currency: m.currency }
 }
 function discountedMoney(d?: api.DiscountedPriceRef) {
   return money(d?.discountedPrice ?? d?.basePrice)
@@ -93,7 +90,7 @@ export default function Checkout() {
   const { state } = useLocation() as { state?: { itemIds?: string[] } }
   const { items, refresh: refreshCart } = useCart()
   const { addresses, active, setDefault, refresh: refreshAddresses } = useAddresses()
-  const { formatPrice, format } = useCurrency()
+  const { format } = useCurrency()
 
   const [step, setStep] = useState<Step>(1)
   const [addingAddress, setAddingAddress] = useState(false)
@@ -147,6 +144,15 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, active?.id])
 
+  useEffect(() => {
+    track(AnalyticsEvents.checkoutStarted, {
+      item_count: itemIds.length,
+      step,
+    })
+    // Fire once when checkout mounts — step changes are their own UX signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const grossM = discountedMoney(quote?.grossPriceDetails)
   const shippingM = discountedMoney(quote?.shippingFeeDetails)
   const totalM = money(quote?.totalAmountDetails)
@@ -165,6 +171,11 @@ export default function Checkout() {
       })
       await api.initiateOrderPayment(order.id, gateway)
       refreshCart()
+      track(AnalyticsEvents.orderPlaced, {
+        order_id: String(order.visualId ?? order.id),
+        gateway,
+        item_count: itemIds.length,
+      })
       navigate(`/orders?placed=${order.visualId ?? order.id}`)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Payment could not be started.')
@@ -335,7 +346,7 @@ export default function Checkout() {
                   )}
                 </div>
                 <div className="shrink-0 text-sm font-bold text-navy-900 dark:text-white">
-                  {formatPrice(it.priceUSD * it.qty)}
+                  {format(it.price * it.qty, it.currency)}
                 </div>
               </div>
             ))}

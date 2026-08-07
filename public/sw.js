@@ -1,8 +1,10 @@
-// Minimal service worker: makes the site installable (required for the PWA
-// share target) without caching anything, so dev and deploys stay fresh.
-// Add real offline caching here later if wanted.
+// PWA service worker — keep installable; don't intercept cross-origin
+// partner images (that raced with the page Cache Storage / CORS fetch and
+// blanked the store rail icons). Icon caching is handled by StoreLogo.
 self.addEventListener('install', () => self.skipWaiting())
-self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim())
+})
 self.addEventListener('fetch', () => {
-  // network passthrough — a fetch handler must exist for installability
+  // network passthrough
 })

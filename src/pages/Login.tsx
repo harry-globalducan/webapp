@@ -261,11 +261,11 @@ export default function Login() {
             />
             <span>
               I agree to the{' '}
-              <Link to="/account" className="font-semibold text-navy-600 hover:underline dark:text-navy-200">
+              <Link to="/terms" className="font-semibold text-navy-600 hover:underline dark:text-navy-200">
                 Terms &amp; Conditions
               </Link>{' '}
               and{' '}
-              <Link to="/account" className="font-semibold text-navy-600 hover:underline dark:text-navy-200">
+              <Link to="/privacy" className="font-semibold text-navy-600 hover:underline dark:text-navy-200">
                 Privacy Policy
               </Link>
             </span>

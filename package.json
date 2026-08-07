@@ -10,8 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@amplitude/analytics-browser": "^2.45.5",
+    "@amplitude/plugin-session-replay-browser": "^1.33.7",
     "@tailwindcss/vite": "^4.3.3",
     "cobe": "^2.0.1",
+    "country-state-city": "^3.2.1",
     "lucide-react": "^1.25.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

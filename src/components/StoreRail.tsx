@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Store, TicketPercent, Sparkles, Grid2x2, Gift } from 'lucide-react'
 import { useHomeData } from '../context/HomeDataContext'
 import { useShopGate } from './ShopGate'
+import StoreLogo from './StoreLogo'
 
 const CATEGORY_TAGS = [
   { label: 'Fashion', to: '/#stores' },
@@ -37,11 +38,11 @@ export default function StoreRail() {
               className="group flex w-[74px] shrink-0 flex-col items-center gap-1.5"
             >
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-navy-900/8 bg-white shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-tangerine-300 group-hover:shadow-md dark:border-white/10 dark:bg-white/5">
-                <img
+                <StoreLogo
                   src={store.logo}
-                  alt=""
+                  name={store.name}
+                  domain={store.domain}
                   className="h-6 w-6 rounded object-contain"
-                  loading="lazy"
                 />
               </span>
               <span className="w-full truncate text-center text-[11px] font-medium text-navy-800/80 group-hover:text-navy-900 dark:text-white/70 dark:group-hover:text-white">

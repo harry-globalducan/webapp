@@ -2,12 +2,15 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import * as api from '../lib/api'
 import { useAuth } from './AuthContext'
 import { useHomeData } from './HomeDataContext'
+import { pickMoney } from '../lib/money'
 
 export interface CartItem {
   id: string
   title: string
   store: string
-  priceUSD: number
+  /** Unit price in `currency` (from the server — do not re-convert as USD). */
+  price: number
+  currency: string
   qty: number
   emoji: string
   /** Real product image from the scraper, when available. */
@@ -42,17 +45,13 @@ const PLACEHOLDER_EMOJI = '\u{1F4E6}'
 
 /** Map a server cart item (GET /api/v1/orders/cart) into the UI shape. */
 function fromApi(it: api.ApiCartItem, storeName: (id?: number) => string): CartItem {
-  const pd = it.priceDetails
-  const priceUSD =
-    (pd?.paymentCurrency === 'USD' ? pd?.priceInPaymentCurrency : undefined) ??
-    (pd?.userCurrency === 'USD' ? pd?.priceInUserCurrency : undefined) ??
-    pd?.priceInPaymentCurrency ??
-    0
+  const money = pickMoney(it.priceDetails)
   return {
     id: it.id,
     title: it.productTitle ?? 'Reading product…',
     store: storeName(it.storeId),
-    priceUSD,
+    price: money.amount,
+    currency: money.currency,
     qty: it.count ?? 1,
     emoji: PLACEHOLDER_EMOJI,
     imageUrl: it.imageUrl,

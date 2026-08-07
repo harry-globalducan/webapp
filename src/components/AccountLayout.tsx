@@ -10,10 +10,12 @@ import {
   Headphones,
   Heart,
   ChevronRight,
+  UserRound,
 } from 'lucide-react'
 
 const navItems = [
   { to: '/account', label: 'Overview', icon: LayoutGrid },
+  { to: '/profile', label: 'Profile', icon: UserRound },
   { to: '/orders', label: 'Orders', icon: Package },
   { to: '/wishlist', label: 'Wishlist', icon: Heart },
   { to: '/wallet', label: 'Wallet', icon: Wallet },

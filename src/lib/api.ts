@@ -3,23 +3,26 @@
  *
  * Base URL resolution:
  *
- * - **Development** — always calls same-origin `/api/v1/*`; the Vite dev server
- *   proxies that to `VITE_API_BASE` (see vite.config.ts). This avoids CORS and
- *   mixed-content issues against a plain-HTTP LAN backend.
+ * - **Development + HTTPS API** (e.g. `VITE_API_BASE=https://app.globalducan.com`)
+ *   → call that origin directly. Prod allows CORS `*`, and this avoids Vite
+ *   proxy DNS failures that break login + stores on some networks.
  *
- * - **Production** (Vercel et al.) — there is no dev proxy, so:
- *     • If `VITE_API_BASE` is set at build time, requests go directly to that
- *       absolute origin, e.g. `https://api.globalducan.com/api/v1/auth/signin`.
- *     • If it is NOT set, requests stay relative (`/api/v1/...`) so they can be
- *       forwarded by a same-origin rewrite — see `vercel.json`.
+ * - **Development + HTTP LAN API** (e.g. `http://192.168.1.19:15000`)
+ *   → same-origin `/api/v1/*` via the Vite proxy (avoids mixed-content/CORS).
+ *
+ * - **Production** (Vercel et al.) — no Vite proxy:
+ *     • If `VITE_API_BASE` is set at build time, requests go to that origin.
+ *     • If unset, requests stay relative (`/api/v1/...`) for a same-origin rewrite.
  *
  * ⚠️ A browser on an HTTPS page cannot call an `http://` API (mixed content).
- *    For production either expose the backend over HTTPS, or leave
- *    `VITE_API_BASE` unset and proxy through the `vercel.json` rewrite.
  */
+const envBase = (import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '')
+
 const API_HOST = import.meta.env.DEV
-  ? '' // same-origin → handled by the Vite dev proxy
-  : (import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '')
+  ? envBase.startsWith('https://')
+    ? envBase
+    : '' // relative → Vite proxy for plain-HTTP LAN backends
+  : envBase
 
 export const API_ROOT = `${API_HOST}/api/v1`
 
@@ -129,18 +132,25 @@ export function setAuthToken(token: string | null) {
   authToken = token
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+type RequestOptions = RequestInit & {
+  /** Omit the Bearer token — required for public /home/** endpoints so a
+   *  stale session cannot turn a public 200 into a 401. */
+  skipAuth?: boolean
+}
+
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { skipAuth = false, headers: extraHeaders, ...init } = options
   let res: Response
   try {
     res = await fetch(path, {
-      ...options,
+      ...init,
       headers: {
         'Content-Type': 'application/json',
         // Backend/mobile clients send a platform hint on every call.
         'X-Platform': 'web',
         Accept: 'application/json',
-        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        ...options.headers,
+        ...(authToken && !skipAuth ? { Authorization: `Bearer ${authToken}` } : {}),
+        ...extraHeaders,
       },
     })
   } catch {
@@ -162,7 +172,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         ? (data.message ?? data.error ?? data.detail ?? undefined)
         : undefined
 
-    if (res.status === 401) onAuthFailure?.()
+    // Never force-logout from a public call (e.g. /home/stores).
+    if (res.status === 401 && !skipAuth) onAuthFailure?.()
 
     throw new ApiError(
       messageForStatus(res.status, typeof serverMessage === 'string' ? serverMessage : undefined),
@@ -267,15 +278,21 @@ export interface SupportedCurrency {
   code: string
 }
 
-export const getStores = () => request<ApiStore[]>(`${API_ROOT}/home/stores`)
-export const getBanners = (country?: string, loggedIn = true) =>
+export const getStores = () =>
+  request<ApiStore[]>(`${API_ROOT}/home/stores`, { skipAuth: true })
+export const getBanners = (country?: string, loggedIn = false) =>
   request<ApiBanner[]>(
     `${API_ROOT}/home/banners?loggedIn=${loggedIn}${country ? `&country=${encodeURIComponent(country)}` : ''}`,
+    { skipAuth: true },
   )
-export const getServiceBanners = () => request<string[]>(`${API_ROOT}/home/service-banners`)
-export const getSupportedCountries = () => request<SupportedCountry[]>(`${API_ROOT}/home/countries`)
-export const getSupportedCurrencies = () => request<SupportedCurrency[]>(`${API_ROOT}/home/currencies`)
-export const getPaymentCurrencies = () => request<SupportedCurrency[]>(`${API_ROOT}/home/payment-currencies`)
+export const getServiceBanners = () =>
+  request<string[]>(`${API_ROOT}/home/service-banners`, { skipAuth: true })
+export const getSupportedCountries = () =>
+  request<SupportedCountry[]>(`${API_ROOT}/home/countries`, { skipAuth: true })
+export const getSupportedCurrencies = () =>
+  request<SupportedCurrency[]>(`${API_ROOT}/home/currencies`, { skipAuth: true })
+export const getPaymentCurrencies = () =>
+  request<SupportedCurrency[]>(`${API_ROOT}/home/payment-currencies`, { skipAuth: true })
 
 /* ------------------------------------------------------------------ *
  * Users — AUTH required.
@@ -363,11 +380,11 @@ export interface GeneralResponse<T = string> {
  * ------------------------------------------------------------------ */
 
 export interface PriceRef {
-  priceInBaseCurrency?: number
+  priceInBaseCurrency?: number | string
   baseCurrency?: string
-  priceInUserCurrency?: number
+  priceInUserCurrency?: number | string
   userCurrency?: string
-  priceInPaymentCurrency?: number
+  priceInPaymentCurrency?: number | string
   paymentCurrency?: string
 }
 

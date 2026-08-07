@@ -39,9 +39,16 @@ const STATUS_MAP: Record<string, OrderStatus> = {
   COMPLETED: 'Delivered',
 }
 
+import { toAmount } from '../lib/money'
+
 function pickAmount(p?: api.PriceRef): number {
   if (!p) return 0
-  return p.priceInUserCurrency ?? p.priceInBaseCurrency ?? p.priceInPaymentCurrency ?? 0
+  return (
+    toAmount(p.priceInUserCurrency) ||
+    toAmount(p.priceInBaseCurrency) ||
+    toAmount(p.priceInPaymentCurrency) ||
+    0
+  )
 }
 
 /** Map a server order (GET /api/v1/orders) into the shape this UI renders. */

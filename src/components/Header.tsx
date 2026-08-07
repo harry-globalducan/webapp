@@ -63,7 +63,7 @@ export default function Header() {
   const { active, addresses, setDefault } = useAddresses()
   const { isAuthed, user, logout } = useAuth()
 
-  const currentLang = options.find((o) => o.code === locale)?.native ?? locale.toUpperCase()
+  const currentLang = locale.slice(0, 1).toUpperCase() + locale.slice(1).toLowerCase()
   const displayName = user?.name || user?.email || 'Account'
   const initial = displayName.charAt(0).toUpperCase()
 
@@ -318,6 +318,10 @@ export default function Header() {
                 {wishCount}
               </span>
             )}
+          </Link>
+
+          <Link to="/support" className={iconPill} aria-label={t('nav.support')}>
+            <Headphones className="h-5 w-5" />
           </Link>
 
           <Link to="/cart" className={`relative ${iconPill}`} aria-label={t('action.cart')}>

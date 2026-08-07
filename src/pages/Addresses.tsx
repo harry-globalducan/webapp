@@ -1,17 +1,30 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Home, MapPin, Phone, CheckCircle2 } from 'lucide-react'
+import { Plus, Home, MapPin, Phone, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
 import AccountLayout from '../components/AccountLayout'
 import { useAddresses } from '../context/AddressContext'
 import { formatPhone } from '../lib/phone'
 import AddressForm from '../components/AddressForm'
 import { useAuth } from '../context/AuthContext'
 
-
 export default function Addresses() {
-  const { addresses, setDefault, remove, loading, refresh } = useAddresses()
+  const { addresses, setDefault, remove, loading, refresh, error, live } = useAddresses()
   const [adding, setAdding] = useState(false)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const { isAuthed } = useAuth()
+
+  const handleRemove = async (id: string) => {
+    setActionError(null)
+    setRemovingId(id)
+    try {
+      await remove(id)
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Could not remove this address.')
+    } finally {
+      setRemovingId(null)
+    }
+  }
 
   return (
     <AccountLayout
@@ -32,7 +45,32 @@ export default function Addresses() {
         </div>
       )}
 
-      {isAuthed && !loading && addresses.length === 0 && !adding && (
+      {isAuthed && (error || actionError) && (
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+          <p className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            {actionError || error}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setActionError(null)
+              refresh()
+            }}
+            className="text-xs font-bold uppercase tracking-wider underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {isAuthed && loading && addresses.length === 0 && (
+        <div className="mb-6 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading addresses…
+        </div>
+      )}
+
+      {isAuthed && !loading && live && addresses.length === 0 && !adding && (
         <div className="mb-6 rounded-2xl border border-dashed border-navy-900/15 bg-cream-50 px-6 py-10 text-center dark:border-white/15 dark:bg-white/5">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-navy-100 text-navy-500 dark:bg-navy-500/20 dark:text-navy-200">
             <Home className="h-6 w-6" />
@@ -60,6 +98,7 @@ export default function Addresses() {
             onCancel={() => setAdding(false)}
             onSaved={() => {
               setAdding(false)
+              setActionError(null)
               refresh()
             }}
           />
@@ -68,7 +107,7 @@ export default function Addresses() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {/* Add new — the empty state carries its own CTA, so don't double up. */}
-        {!adding && addresses.length > 0 && (
+        {!adding && isAuthed && live && addresses.length > 0 && (
           <button
             type="button"
             onClick={() => setAdding(true)}
@@ -82,7 +121,7 @@ export default function Addresses() {
         {addresses.map((addr) => (
           <div
             key={addr.id}
-            className="flex min-h-56 flex-col rounded-2xl border border-navy-900/10 bg-white dark:border-white/10 dark:bg-black shadow-sm"
+            className="flex min-h-56 flex-col rounded-2xl border border-navy-900/10 bg-white shadow-sm dark:border-white/10 dark:bg-black"
           >
             <div className="flex items-center justify-between border-b border-navy-900/10 px-5 py-3 dark:border-white/10">
               <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -106,15 +145,17 @@ export default function Addresses() {
               </div>
             </div>
             <div className="flex gap-4 border-t border-navy-900/10 px-5 py-3 text-xs font-semibold dark:border-white/10">
-              <button className="text-navy-600 hover:underline dark:text-navy-200">Edit</button>
               <button
-                onClick={() => remove(addr.id)}
-                className="text-navy-600 hover:underline dark:text-navy-200"
+                type="button"
+                onClick={() => void handleRemove(addr.id)}
+                disabled={removingId === addr.id}
+                className="text-navy-600 hover:underline disabled:opacity-50 dark:text-navy-200"
               >
-                Remove
+                {removingId === addr.id ? 'Removing…' : 'Remove'}
               </button>
               {!addr.isDefault && (
                 <button
+                  type="button"
                   onClick={() => setDefault(addr.id)}
                   className="ml-auto text-tangerine-600 hover:underline dark:text-tangerine-300"
                 >

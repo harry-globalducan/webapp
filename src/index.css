@@ -63,6 +63,7 @@
   --animate-pulse-ring: pulse-ring 2.8s ease-out infinite;
   --animate-spin-slow: spin 60s linear infinite;
   --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-news-ken: news-ken 28s ease-in-out infinite alternate;
 }
 
 /*
@@ -90,6 +91,10 @@
 
 @keyframes shimmer {
   100% { transform: translateX(100%); }
+}
+@keyframes news-ken {
+  from { transform: scale(1.05) translate(0%, 0%); }
+  to { transform: scale(1.14) translate(-1.5%, 1%); }
 }
 @keyframes float {
   0%, 100% { transform: translateY(0); }
@@ -244,6 +249,7 @@
     .animate-ping-dot,
     .animate-pulse-ring,
     .animate-spin-slow,
+    .animate-news-ken,
     .shimmer::after {
       animation: none !important;
     }

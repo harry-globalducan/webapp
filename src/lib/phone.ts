@@ -38,6 +38,31 @@ export const DIAL_CODES: DialCode[] = [
   { code: 'FJ', dial: '+679', flag: '🇫🇯' },
 ]
 
+/** Expected national-number length per dial code (inclusive range). */
+const NATIONAL_LENGTH: Record<string, { min: number; max: number; hint: string }> = {
+  '+960': { min: 7, max: 7, hint: '7 digits (e.g. 7XXXXXX)' },
+  '+230': { min: 7, max: 8, hint: '7–8 digits' },
+  '+248': { min: 7, max: 7, hint: '7 digits' },
+  '+975': { min: 7, max: 8, hint: '7–8 digits' },
+  '+977': { min: 10, max: 10, hint: '10 digits' },
+  '+94': { min: 9, max: 9, hint: '9 digits' },
+  '+971': { min: 9, max: 9, hint: '9 digits (omit leading 0)' },
+  '+966': { min: 9, max: 9, hint: '9 digits (omit leading 0)' },
+  '+974': { min: 8, max: 8, hint: '8 digits' },
+  '+968': { min: 8, max: 8, hint: '8 digits' },
+  '+973': { min: 8, max: 8, hint: '8 digits' },
+  '+965': { min: 8, max: 8, hint: '8 digits' },
+  '+91': { min: 10, max: 10, hint: '10 digits' },
+  '+44': { min: 10, max: 10, hint: '10 digits (omit leading 0)' },
+  '+1': { min: 10, max: 10, hint: '10 digits' },
+  '+61': { min: 9, max: 9, hint: '9 digits (omit leading 0)' },
+  '+64': { min: 8, max: 10, hint: '8–10 digits' },
+  '+65': { min: 8, max: 8, hint: '8 digits' },
+  '+60': { min: 9, max: 10, hint: '9–10 digits' },
+  '+27': { min: 9, max: 9, hint: '9 digits' },
+  '+679': { min: 7, max: 7, hint: '7 digits' },
+}
+
 export function dialFor(countryCode?: string): DialCode | undefined {
   if (!countryCode) return undefined
   return DIAL_CODES.find((d) => d.code === countryCode.toUpperCase())
@@ -89,8 +114,35 @@ export function formatPhone(value?: string): string {
   return `${dial} ${formatNational(national)}`.trim()
 }
 
-/** Enough digits to be plausible without rejecting valid short numbers. */
-export function isValidNational(national: string): boolean {
+/** Hint for the phone field placeholder / helper text. */
+export function phoneHint(dial: string): string {
+  return NATIONAL_LENGTH[dial]?.hint ?? '6–15 digits'
+}
+
+/**
+ * Validate the national number for the selected dial code.
+ * Returns null when valid, otherwise a short user-facing message.
+ */
+export function validatePhone(dial: string, national: string): string | null {
+  const d = digitsOnly(national)
+  if (!d) return 'Enter a phone number.'
+  if (/^0/.test(d) && (dial === '+971' || dial === '+966' || dial === '+44' || dial === '+61')) {
+    return 'Omit the leading 0 after the country code.'
+  }
+  const rule = NATIONAL_LENGTH[dial]
+  if (rule) {
+    if (d.length < rule.min || d.length > rule.max) {
+      return `Enter ${rule.hint} for ${dial}.`
+    }
+    return null
+  }
+  if (d.length < 6 || d.length > 15) return 'Phone number must be 6–15 digits.'
+  return null
+}
+
+/** Enough digits to be plausible — prefer `validatePhone` for form checks. */
+export function isValidNational(national: string, dial?: string): boolean {
+  if (dial) return validatePhone(dial, national) === null
   const d = digitsOnly(national)
   return d.length >= 6 && d.length <= 15
 }

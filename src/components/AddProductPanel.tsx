@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Link2, ScanSearch, ShoppingBag } from 'lucide-react'
 import CaptureFlow from './CaptureFlow'
 import { useHomeData } from '../context/HomeDataContext'
+import StoreLogo from './StoreLogo'
 
 const steps = [
   { icon: Link2, label: 'Paste a product link' },
@@ -98,11 +99,11 @@ export default function AddProductPanel({ initialUrl = '' }: AddProductPanelProp
                 className="flex items-center gap-2 rounded-full border border-navy-900/8 bg-white/80 px-3 py-1.5 text-xs font-medium text-navy-700 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-white/80"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
-                <img
+                <StoreLogo
                   src={store.logo}
-                  alt=""
-                  className="h-4 w-4 rounded-sm"
-                  loading="lazy"
+                  name={store.name}
+                  domain={store.domain}
+                  className="h-4 w-4 rounded-sm object-contain"
                 />
                 {store.name}
               </li>

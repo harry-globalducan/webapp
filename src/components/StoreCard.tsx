@@ -1,27 +1,8 @@
-import { useState, type MouseEvent } from 'react'
+import { type MouseEvent } from 'react'
 import { ArrowUpRight, Truck } from 'lucide-react'
 import type { Store } from '../data/stores'
 import { useShopGate } from './ShopGate'
-
-function StoreLogo({ store, size }: { store: Store; size: string }) {
-  const [imgFailed, setImgFailed] = useState(false)
-  if (imgFailed) {
-    return (
-      <span className="font-display text-xl font-bold text-navy-300">
-        {store.name.slice(0, 2).toUpperCase()}
-      </span>
-    )
-  }
-  return (
-    <img
-      src={store.logo}
-      alt={store.name}
-      className={`${size} rounded-xl object-contain`}
-      loading="lazy"
-      onError={() => setImgFailed(true)}
-    />
-  )
-}
+import StoreLogo from './StoreLogo'
 
 function useOpenShop(store: Store) {
   const { requestShop } = useShopGate()
@@ -42,7 +23,12 @@ export function FeaturedStoreCard({ store }: { store: Store }) {
     >
       <div className="relative flex items-start justify-between">
         <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cream-100 ring-1 ring-navy-900/5 dark:bg-white/10 dark:ring-white/10">
-          <StoreLogo store={store} size="h-9 w-9" />
+          <StoreLogo
+            src={store.logo}
+            name={store.name}
+            domain={store.domain}
+            className="h-9 w-9 rounded-xl object-contain"
+          />
         </span>
         <span className="rounded-full bg-tangerine-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-tangerine-700 dark:bg-tangerine-500/15 dark:text-tangerine-300">
           Preferred
@@ -78,7 +64,12 @@ export default function StoreCard({ store }: { store: Store }) {
       className="group relative flex flex-col overflow-hidden rounded-2xl border border-navy-900/8 bg-white transition duration-300 hover:-translate-y-0.5 hover:border-navy-300 dark:border-white/10 dark:bg-black dark:hover:border-white/25"
     >
       <div className="flex h-24 items-center justify-center bg-white p-5 dark:bg-white/5">
-        <StoreLogo store={store} size="h-12 w-12" />
+        <StoreLogo
+          src={store.logo}
+          name={store.name}
+          domain={store.domain}
+          className="h-12 w-12 rounded-xl object-contain"
+        />
       </div>
       <div className="border-t border-navy-900/5 px-4 py-2.5 dark:border-white/5">
         <div className="flex items-center justify-between">

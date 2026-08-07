@@ -1,5 +1,6 @@
 import { getStoreRegistry, type Store } from '../data/stores'
 import * as api from './api'
+import { pickMoney, toAmount } from './money'
 
 export interface ProductVariant {
   label: string
@@ -20,10 +21,11 @@ export interface ResolvedProduct {
   /** Store price in its base currency (INR) — shown as "x in store". */
   priceINR: number
   /**
-   * Price in USD as calculated by the server. The backend already applies the
-   * live FX rate, so we never re-convert from INR ourselves.
+   * Shopper-facing unit price already converted by the server.
+   * Display with `format(price, currency)` — never re-convert as USD.
    */
-  priceUSD: number
+  price: number
+  currency: string
   /** Real product image from the scraper, when available. */
   imageUrl?: string
   emoji: string
@@ -116,21 +118,16 @@ function toResolved(
   store: Store,
   existingQty = 0,
 ): ResolvedProduct {
-  const pd = item.priceDetails
-  // Trust the server's conversions rather than re-deriving them from INR.
-  const priceUSD =
-    (pd?.paymentCurrency === 'USD' ? pd?.priceInPaymentCurrency : undefined) ??
-    (pd?.userCurrency === 'USD' ? pd?.priceInUserCurrency : undefined) ??
-    pd?.priceInPaymentCurrency ??
-    0
+  const money = pickMoney(item.priceDetails)
   return {
     url,
     store,
     cartItemId: item.id,
     existingQty,
     title: item.productTitle ?? 'Product',
-    priceINR: pd?.priceInBaseCurrency ?? 0,
-    priceUSD,
+    priceINR: toAmount(item.priceDetails?.priceInBaseCurrency),
+    price: money.amount,
+    currency: money.currency,
     imageUrl: item.imageUrl,
     emoji: PLACEHOLDER_EMOJI,
     weightKg: 0.5,
@@ -186,9 +183,12 @@ export async function resolveProduct(url: string, storeApiId?: number): Promise<
   )
 }
 
-/** Landed-cost estimate in USD; format with the app's currency context. */
+/**
+ * Rough landed-cost estimate in the product's payment currency.
+ * Real totals come from the checkout quote — these figures are previews only.
+ */
 export function landedCost(product: ResolvedProduct, qty: number): LandedCost {
-  const item = product.priceUSD * qty
+  const item = product.price * qty
   // Shipping is quoted from the tentative weight; the server recalculates it
   // from the actual weight once the parcel is packed.
   const shipping = Math.max(6, product.weightKg * qty * 11)

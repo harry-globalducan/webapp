@@ -9,6 +9,8 @@ import {
 import { Link } from 'react-router-dom'
 import { Puzzle, X, ExternalLink, Link2, Smartphone } from 'lucide-react'
 import { chromeExtension } from '../data/apps'
+import StoreLogo from './StoreLogo'
+import { AnalyticsEvents, track } from '../lib/analytics'
 
 export interface ShopTarget {
   name: string
@@ -50,6 +52,11 @@ export function ShopGateProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const requestShop = useCallback((target: ShopTarget) => {
+    track(AnalyticsEvents.storeOpened, {
+      store_name: target.name,
+      store_domain: target.domain,
+      via_gate: !isSkipped(),
+    })
     if (isSkipped()) {
       openStore(target.domain)
       return
@@ -108,10 +115,11 @@ export function ShopGateProvider({ children }: { children: ReactNode }) {
           <div className="w-full max-w-md overflow-hidden rounded-3xl border border-navy-900/10 bg-white shadow-2xl dark:border-white/10 dark:bg-black">
             <div className="flex items-start justify-between gap-3 border-b border-navy-900/5 px-6 py-5 dark:border-white/10">
               <div className="flex items-center gap-3">
-                <img
+                <StoreLogo
                   src={store.logo}
-                  alt=""
-                  className="h-10 w-10 rounded-xl bg-cream-100 p-1.5 dark:bg-white/10"
+                  name={store.name}
+                  domain={store.domain}
+                  className="h-10 w-10 rounded-xl bg-cream-100 object-contain p-1.5 dark:bg-white/10"
                 />
                 <div>
                   <h2

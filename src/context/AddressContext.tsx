@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import * as api from '../lib/api'
+import { ApiError } from '../lib/api'
 import { useAuth } from './AuthContext'
 
 export interface DeliveryAddress {
@@ -21,19 +22,15 @@ export interface DeliveryAddress {
   isDefault: boolean
 }
 
+/** Legacy guest cache — cleared on sign-in so it can't masquerade as live data. */
 const STORAGE_KEY = 'ducan-addresses'
 
-/** No seed data — an empty list renders a proper empty state. */
-const defaults: DeliveryAddress[] = []
-
-function load(): DeliveryAddress[] {
+function clearLocalCache() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as DeliveryAddress[]
+    localStorage.removeItem(STORAGE_KEY)
   } catch {
-    // ignore
+    /* ignore */
   }
-  return defaults
 }
 
 /** Map a server address (GET /api/v1/users/address) into the UI shape. */
@@ -58,42 +55,65 @@ interface AddressContextValue {
   addresses: DeliveryAddress[]
   active: DeliveryAddress | null
   setDefault: (id: string) => void
-  remove: (id: string) => void
-  /** True when the list came from the API rather than local storage. */
+  /** Deletes on the server when signed in. Rejects with a message on failure. */
+  remove: (id: string) => Promise<void>
+  /** True when the list came from the API. */
   live: boolean
   loading: boolean
+  /** Last list/delete error to surface in the UI. */
+  error: string | null
   refresh: () => void
 }
 
 const AddressContext = createContext<AddressContextValue | null>(null)
 
 export function AddressProvider({ children }: { children: ReactNode }) {
-  const [addresses, setAddresses] = useState<DeliveryAddress[]>(load)
+  const [addresses, setAddresses] = useState<DeliveryAddress[]>([])
   const [live, setLive] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [tick, setTick] = useState(0)
   const { isAuthed } = useAuth()
 
   const refresh = useCallback(() => setTick((t) => t + 1), [])
 
-  // Signed-in users get their real addresses.
   useEffect(() => {
     if (!isAuthed) {
+      setAddresses([])
       setLive(false)
+      setError(null)
+      setLoading(false)
       return
     }
+
+    // Signed-in users must never see leftover guest/localStorage addresses.
+    clearLocalCache()
+
     let cancelled = false
     setLoading(true)
+    setError(null)
     api
       .getAddresses()
       .then((list) => {
-        if (cancelled || !Array.isArray(list)) return
+        if (cancelled) return
+        if (!Array.isArray(list)) {
+          setAddresses([])
+          setLive(true)
+          return
+        }
         const active = list.filter((a) => a.active !== false)
         setAddresses(active.map(fromApi))
         setLive(true)
       })
-      .catch(() => {
-        /* keep local addresses */
+      .catch((err) => {
+        if (cancelled) return
+        setAddresses([])
+        setLive(false)
+        setError(
+          err instanceof ApiError
+            ? err.message
+            : 'Could not load your addresses. Please try again.',
+        )
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -103,37 +123,45 @@ export function AddressProvider({ children }: { children: ReactNode }) {
     }
   }, [isAuthed, tick])
 
-  // Only persist the local (guest) list — server addresses are the source of truth.
-  useEffect(() => {
-    if (live) return
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(addresses))
-    } catch {
-      // ignore
-    }
-  }, [addresses, live])
-
   const setDefault = useCallback((id: string) => {
     setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })))
   }, [])
 
   const remove = useCallback(
-    (id: string) => {
-      // Remove server-side when signed in, then reconcile locally either way.
-      if (live && /^\d+$/.test(id)) {
-        api.deleteAddress(Number(id)).catch(() => {
-          /* surfaced on next refresh */
-        })
+    async (id: string) => {
+      if (!isAuthed || !/^\d+$/.test(id)) {
+        throw new Error('Sign in to manage delivery addresses.')
       }
-      setAddresses((prev) => {
-        const next = prev.filter((a) => a.id !== id)
-        if (next.length && !next.some((a) => a.isDefault)) {
-          next[0] = { ...next[0], isDefault: true }
+      try {
+        await api.deleteAddress(Number(id))
+        setAddresses((prev) => {
+          const next = prev.filter((a) => a.id !== id)
+          if (next.length && !next.some((a) => a.isDefault)) {
+            next[0] = { ...next[0], isDefault: true }
+          }
+          return next
+        })
+        setError(null)
+      } catch (err) {
+        // Soft-delete fallback if DELETE isn't allowed.
+        if (err instanceof ApiError && (err.status === 405 || err.status === 404)) {
+          try {
+            await api.updateAddress(Number(id), { active: false })
+            setAddresses((prev) => prev.filter((a) => a.id !== id))
+            setError(null)
+            return
+          } catch {
+            /* fall through */
+          }
         }
-        return next
-      })
+        const message =
+          err instanceof ApiError ? err.message : 'Could not remove this address. Please try again.'
+        setError(message)
+        refresh()
+        throw new Error(message)
+      }
     },
-    [live],
+    [isAuthed, refresh],
   )
 
   const active = useMemo(
@@ -142,8 +170,8 @@ export function AddressProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo(
-    () => ({ addresses, active, setDefault, remove, live, loading, refresh }),
-    [addresses, active, setDefault, remove, live, loading, refresh],
+    () => ({ addresses, active, setDefault, remove, live, loading, error, refresh }),
+    [addresses, active, setDefault, remove, live, loading, error, refresh],
   )
 
   return <AddressContext.Provider value={value}>{children}</AddressContext.Provider>

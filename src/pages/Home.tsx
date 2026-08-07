@@ -15,11 +15,16 @@ import {
   Star,
   Quote,
   Puzzle,
+  Newspaper,
+  ArrowRight,
+  Play,
+  ExternalLink,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { categories } from '../data/stores'
 import { useHomeData } from '../context/HomeDataContext'
 import type { PromoBanner } from '../data/banners'
+import { pressItems } from '../data/press'
 import StoreCard, { FeaturedStoreCard } from '../components/StoreCard'
 import AddProductPanel from '../components/AddProductPanel'
 import Reveal from '../components/Reveal'
@@ -395,6 +400,81 @@ export default function Home() {
               </Reveal>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* In the news teaser */}
+      <section className="border-y border-navy-900/5 bg-gradient-to-b from-cream-50 to-white dark:border-white/5 dark:from-[#0f1111] dark:to-black">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+          <Reveal>
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <SectionHeading eyebrow="Press & social" title="In the" accent="news" />
+              <Link
+                to="/news"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-700 transition hover:text-tangerine-600 dark:text-navy-200 dark:hover:text-tangerine-300"
+              >
+                See all coverage <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <p className="mt-3 max-w-xl text-sm text-slate-500 dark:text-slate-400">
+              Partner spotlights, press features, and moments from our channels.
+            </p>
+          </Reveal>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {pressItems.slice(0, 4).map((p, i) => (
+              <Reveal key={p.href} delay={i * 80}>
+                <a
+                  href={p.href}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="group/card block overflow-hidden rounded-3xl border border-navy-900/10 bg-white transition hover:-translate-y-0.5 hover:border-tangerine-400/40 dark:border-white/10 dark:bg-black"
+                >
+                  <div className="relative aspect-video overflow-hidden bg-navy-100 dark:bg-white/5">
+                    {p.branded || !p.img ? (
+                      <div className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-navy-700 to-navy-950">
+                        <span className="text-sm font-bold text-white">{p.source}</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={p.img}
+                        alt=""
+                        loading="lazy"
+                        className="h-full w-full object-cover transition duration-500 group-hover/card:scale-105"
+                      />
+                    )}
+                    <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur">
+                      {p.kind}
+                    </span>
+                    {(p.kind === 'Video' || p.kind === 'Reel') && (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-navy-900">
+                          <Play className="h-3.5 w-3.5 translate-x-0.5 fill-current" />
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <div className="line-clamp-2 text-sm font-semibold text-navy-900 dark:text-white">
+                      {p.title}
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-1 text-xs text-slate-400">
+                      {p.source} <ExternalLink className="h-3 w-3" />
+                    </div>
+                  </div>
+                </a>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal delay={120}>
+            <div className="mt-8 flex justify-center">
+              <Link
+                to="/news"
+                className="inline-flex items-center gap-2 rounded-full bg-navy-800 px-6 py-3 text-sm font-semibold text-white transition hover:bg-navy-700 dark:bg-tangerine-500 dark:hover:bg-tangerine-400"
+              >
+                <Newspaper className="h-4 w-4" /> Explore In the news
+              </Link>
+            </div>
+          </Reveal>
         </div>
       </section>
 

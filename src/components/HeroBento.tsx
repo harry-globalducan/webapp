@@ -4,6 +4,7 @@ import { useHomeData } from '../context/HomeDataContext'
 import type { Store } from '../data/stores'
 import { useShopGate } from './ShopGate'
 import { useCurrency } from '../context/CurrencyContext'
+import StoreLogo from './StoreLogo'
 
 /** Sample live shipments — the floating badge cycles through these destinations. */
 const ROUTES = [
@@ -56,7 +57,12 @@ function CardTile({ card, onStore }: { card: Card; onStore: (store: Store) => vo
         className="group flex w-full items-center gap-3 rounded-2xl border border-navy-900/8 bg-white p-3.5 text-left shadow-sm transition hover:border-tangerine-300 dark:border-white/10 dark:bg-white/5"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cream-50 dark:bg-white/10">
-          <img src={card.store.logo} alt="" className="h-6 w-6 rounded object-contain" loading="lazy" />
+          <StoreLogo
+            src={card.store.logo}
+            name={card.store.name}
+            domain={card.store.domain}
+            className="h-6 w-6 rounded object-contain"
+          />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-bold text-navy-900 dark:text-white">{card.store.name}</span>

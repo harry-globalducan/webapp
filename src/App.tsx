@@ -18,6 +18,7 @@ import { AuthProvider } from './context/AuthContext'
 import { CurrencyProvider } from './context/CurrencyContext'
 import { HomeDataProvider } from './context/HomeDataContext'
 import { ShopGateProvider } from './components/ShopGate'
+import AnalyticsPageViews from './components/AnalyticsPageViews'
 import Home from './pages/Home'
 import Cart from './pages/Cart'
 import Orders from './pages/Orders'
@@ -36,7 +37,10 @@ import UserGuide from './pages/UserGuide'
 import Shipping from './pages/Shipping'
 import Apps from './pages/Apps'
 import About from './pages/About'
+import News from './pages/News'
 import Checkout from './pages/Checkout'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -72,6 +76,9 @@ function PageRoutes() {
         <Route path="/shipping" element={<Shipping />} />
         <Route path="/apps" element={<Apps />} />
         <Route path="/about" element={<About />} />
+        <Route path="/news" element={<News />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
       </Routes>
       <Footer />
     </div>
@@ -91,6 +98,7 @@ export default function App() {
               <BrowserRouter>
                 <ShopGateProvider>
                   <ScrollToTop />
+                  <AnalyticsPageViews />
                   <RouteProgress />
                   <div className="sticky top-0 z-40">
                     <NoticeBar />
